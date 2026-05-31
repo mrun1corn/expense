@@ -1,0 +1,152 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_generative_ai/google_generative_ai.dart';
+import 'package:uuid/uuid.dart';
+import '../providers/gemini_provider.dart';
+import '../domain/models/chat_message.dart';
+
+final chatMessagesProvider = StateNotifierProvider<ChatNotifier, List<ChatMessage>>((ref) {
+  return ChatNotifier();
+});
+
+class ChatNotifier extends StateNotifier<List<ChatMessage>> {
+  ChatNotifier() : super([]);
+
+  void addMessage(ChatMessage message) {
+    state = [...state, message];
+  }
+}
+
+class AiChatScreen extends ConsumerStatefulWidget {
+  const AiChatScreen({super.key});
+
+  @override
+  ConsumerState<AiChatScreen> createState() => _AiChatScreenState();
+}
+
+class _AiChatScreenState extends ConsumerState<AiChatScreen> {
+  final _controller = TextEditingController();
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _sendMessage() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    _controller.clear();
+    
+    final userMsg = ChatMessage(
+      id: const Uuid().v4(),
+      text: text,
+      isUser: true,
+      timestamp: DateTime.now(),
+    );
+    
+    ref.read(chatMessagesProvider.notifier).addMessage(userMsg);
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final gemini = ref.read(geminiDatasourceProvider);
+      final responseStr = await gemini.sendChat(text);
+      
+      final botMsg = ChatMessage(
+        id: const Uuid().v4(),
+        text: responseStr,
+        isUser: false,
+        timestamp: DateTime.now(),
+      );
+      
+      ref.read(chatMessagesProvider.notifier).addMessage(botMsg);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send message: \$e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = ref.watch(chatMessagesProvider);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('SmartSpend AI'),
+      ),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                final msg = messages[index];
+                final isUser = msg.isUser;
+                return Align(
+                  alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isUser ? Theme.of(context).colorScheme.primaryContainer : Theme.of(context).colorScheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(
+                      msg.text,
+                      style: TextStyle(
+                        color: isUser ? Theme.of(context).colorScheme.onPrimaryContainer : Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+          if (_isLoading)
+            const Padding(
+              padding: EdgeInsets.all(8.0),
+              child: CircularProgressIndicator(),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _controller,
+                    decoration: const InputDecoration(
+                      hintText: 'Ask about your spending...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(24)),
+                      ),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.send),
+                  onPressed: _sendMessage,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

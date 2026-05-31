@@ -1,0 +1,50 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+
+part of 'expense.dart';
+
+// **************************************************************************
+// JsonSerializableGenerator
+// **************************************************************************
+
+_$ExpenseImpl _$$ExpenseImplFromJson(Map<String, dynamic> json) =>
+    _$ExpenseImpl(
+      id: json['id'] as String,
+      userId: json['userId'] as String,
+      amount: (json['amount'] as num).toDouble(),
+      currency: json['currency'] as String,
+      category: $enumDecode(_$ExpenseCategoryEnumMap, json['category']),
+      date: DateTime.parse(json['date'] as String),
+      title: json['title'] as String,
+      note: json['note'] as String?,
+      receiptImageUrl: json['receiptImageUrl'] as String?,
+      isSynced: json['isSynced'] as bool? ?? false,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+    );
+
+Map<String, dynamic> _$$ExpenseImplToJson(_$ExpenseImpl instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'userId': instance.userId,
+      'amount': instance.amount,
+      'currency': instance.currency,
+      'category': _$ExpenseCategoryEnumMap[instance.category]!,
+      'date': instance.date.toIso8601String(),
+      'title': instance.title,
+      'note': instance.note,
+      'receiptImageUrl': instance.receiptImageUrl,
+      'isSynced': instance.isSynced,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+    };
+
+const _$ExpenseCategoryEnumMap = {
+  ExpenseCategory.food: 'food',
+  ExpenseCategory.transport: 'transport',
+  ExpenseCategory.utilities: 'utilities',
+  ExpenseCategory.entertainment: 'entertainment',
+  ExpenseCategory.shopping: 'shopping',
+  ExpenseCategory.health: 'health',
+  ExpenseCategory.education: 'education',
+  ExpenseCategory.other: 'other',
+};
