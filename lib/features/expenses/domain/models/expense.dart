@@ -24,11 +24,9 @@ class Expense with _$Expense {
     required ExpenseCategory category,
     required DateTime date, // full timestamp (date + time)
     required String title,
-    String? note,
+    required DateTime createdAt, required DateTime updatedAt, String? note,
     String? receiptImageUrl,
     @Default(false) bool isSynced,
-    required DateTime createdAt,
-    required DateTime updatedAt,
   }) = _Expense;
 
   factory Expense.fromJson(Map<String, dynamic> json) =>

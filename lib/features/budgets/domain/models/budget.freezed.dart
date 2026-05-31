@@ -27,8 +27,8 @@ mixin _$Budget {
   String get currency => throw _privateConstructorUsedError;
   int get month => throw _privateConstructorUsedError;
   int get year => throw _privateConstructorUsedError;
-  double get spentAmount => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
+  double get spentAmount => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -48,8 +48,8 @@ abstract class $BudgetCopyWith<$Res> {
       String currency,
       int month,
       int year,
-      double spentAmount,
-      DateTime createdAt});
+      DateTime createdAt,
+      double spentAmount});
 }
 
 /// @nodoc
@@ -72,8 +72,8 @@ class _$BudgetCopyWithImpl<$Res, $Val extends Budget>
     Object? currency = null,
     Object? month = null,
     Object? year = null,
-    Object? spentAmount = null,
     Object? createdAt = null,
+    Object? spentAmount = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -104,14 +104,14 @@ class _$BudgetCopyWithImpl<$Res, $Val extends Budget>
           ? _value.year
           : year // ignore: cast_nullable_to_non_nullable
               as int,
-      spentAmount: null == spentAmount
-          ? _value.spentAmount
-          : spentAmount // ignore: cast_nullable_to_non_nullable
-              as double,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      spentAmount: null == spentAmount
+          ? _value.spentAmount
+          : spentAmount // ignore: cast_nullable_to_non_nullable
+              as double,
     ) as $Val);
   }
 }
@@ -131,8 +131,8 @@ abstract class _$$BudgetImplCopyWith<$Res> implements $BudgetCopyWith<$Res> {
       String currency,
       int month,
       int year,
-      double spentAmount,
-      DateTime createdAt});
+      DateTime createdAt,
+      double spentAmount});
 }
 
 /// @nodoc
@@ -153,8 +153,8 @@ class __$$BudgetImplCopyWithImpl<$Res>
     Object? currency = null,
     Object? month = null,
     Object? year = null,
-    Object? spentAmount = null,
     Object? createdAt = null,
+    Object? spentAmount = null,
   }) {
     return _then(_$BudgetImpl(
       id: null == id
@@ -185,14 +185,14 @@ class __$$BudgetImplCopyWithImpl<$Res>
           ? _value.year
           : year // ignore: cast_nullable_to_non_nullable
               as int,
-      spentAmount: null == spentAmount
-          ? _value.spentAmount
-          : spentAmount // ignore: cast_nullable_to_non_nullable
-              as double,
       createdAt: null == createdAt
           ? _value.createdAt
           : createdAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      spentAmount: null == spentAmount
+          ? _value.spentAmount
+          : spentAmount // ignore: cast_nullable_to_non_nullable
+              as double,
     ));
   }
 }
@@ -208,8 +208,8 @@ class _$BudgetImpl implements _Budget {
       required this.currency,
       required this.month,
       required this.year,
-      this.spentAmount = 0.0,
-      required this.createdAt});
+      required this.createdAt,
+      this.spentAmount = 0.0});
 
   factory _$BudgetImpl.fromJson(Map<String, dynamic> json) =>
       _$$BudgetImplFromJson(json);
@@ -229,14 +229,14 @@ class _$BudgetImpl implements _Budget {
   @override
   final int year;
   @override
+  final DateTime createdAt;
+  @override
   @JsonKey()
   final double spentAmount;
-  @override
-  final DateTime createdAt;
 
   @override
   String toString() {
-    return 'Budget(id: $id, userId: $userId, category: $category, limitAmount: $limitAmount, currency: $currency, month: $month, year: $year, spentAmount: $spentAmount, createdAt: $createdAt)';
+    return 'Budget(id: $id, userId: $userId, category: $category, limitAmount: $limitAmount, currency: $currency, month: $month, year: $year, createdAt: $createdAt, spentAmount: $spentAmount)';
   }
 
   @override
@@ -254,16 +254,16 @@ class _$BudgetImpl implements _Budget {
                 other.currency == currency) &&
             (identical(other.month, month) || other.month == month) &&
             (identical(other.year, year) || other.year == year) &&
-            (identical(other.spentAmount, spentAmount) ||
-                other.spentAmount == spentAmount) &&
             (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt));
+                other.createdAt == createdAt) &&
+            (identical(other.spentAmount, spentAmount) ||
+                other.spentAmount == spentAmount));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, id, userId, category,
-      limitAmount, currency, month, year, spentAmount, createdAt);
+      limitAmount, currency, month, year, createdAt, spentAmount);
 
   @JsonKey(ignore: true)
   @override
@@ -288,8 +288,8 @@ abstract class _Budget implements Budget {
       required final String currency,
       required final int month,
       required final int year,
-      final double spentAmount,
-      required final DateTime createdAt}) = _$BudgetImpl;
+      required final DateTime createdAt,
+      final double spentAmount}) = _$BudgetImpl;
 
   factory _Budget.fromJson(Map<String, dynamic> json) = _$BudgetImpl.fromJson;
 
@@ -308,9 +308,9 @@ abstract class _Budget implements Budget {
   @override
   int get year;
   @override
-  double get spentAmount;
-  @override
   DateTime get createdAt;
+  @override
+  double get spentAmount;
   @override
   @JsonKey(ignore: true)
   _$$BudgetImplCopyWith<_$BudgetImpl> get copyWith =>

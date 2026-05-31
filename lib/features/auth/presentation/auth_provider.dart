@@ -1,8 +1,8 @@
+import 'package:expense/features/auth/data/auth_repository_impl.dart';
+import 'package:expense/features/auth/data/firebase_auth_datasource.dart';
+import 'package:expense/features/auth/domain/auth_repository.dart';
+import 'package:expense/features/auth/domain/models/user_model.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/auth_repository_impl.dart';
-import '../data/firebase_auth_datasource.dart';
-import '../domain/auth_repository.dart';
-import '../domain/models/user_model.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
   return AuthRepositoryImpl(FirebaseAuthDatasource());
@@ -21,9 +21,9 @@ final authControllerProvider = StateNotifierProvider<AuthController, AsyncValue<
 });
 
 class AuthController extends StateNotifier<AsyncValue<void>> {
-  final AuthRepository _repository;
 
   AuthController(this._repository) : super(const AsyncValue.data(null));
+  final AuthRepository _repository;
 
   Future<void> signInWithGoogle() async {
     state = const AsyncValue.loading();

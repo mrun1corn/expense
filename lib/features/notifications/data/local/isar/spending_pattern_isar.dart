@@ -1,6 +1,6 @@
+import 'package:expense/features/expenses/domain/models/expense.dart';
+import 'package:expense/features/notifications/domain/models/spending_pattern.dart';
 import 'package:isar/isar.dart';
-import '../../../../expenses/domain/models/expense.dart';
-import '../../../domain/models/spending_pattern.dart';
 
 part 'spending_pattern_isar.g.dart';
 

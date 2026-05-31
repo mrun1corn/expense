@@ -1,22 +1,23 @@
+import 'dart:async';
+
+import 'package:expense/features/ai_insights/presentation/providers/gemini_provider.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
+import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
+import 'package:expense/features/notifications/engine/pattern_detector.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import '../../domain/models/expense.dart';
-import '../providers/expense_provider.dart';
-import '../../../notifications/engine/pattern_detector.dart';
 
-import 'dart:async';
-import '../../../ai_insights/presentation/providers/gemini_provider.dart';
 class AddExpenseScreen extends ConsumerStatefulWidget {
-  final Expense? existingExpense;
 
   const AddExpenseScreen({
     super.key,
     this.existingExpense,
   });
+  final Expense? existingExpense;
 
   @override
   ConsumerState<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -53,12 +54,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _titleController.dispose();
     _noteController.dispose();
     super.dispose();
   }
 
-  // Debounced Auto-Categorization
   void _onTitleChanged(String value) {
     if (_debounceTimer?.isActive ?? false) _debounceTimer!.cancel();
     
@@ -82,7 +83,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           setState(() {
             _selectedCategory = predictedCategory;
           });
-          HapticFeedback.lightCheck();
+          HapticFeedback.lightImpact();
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('AI auto-selected: ${_formatEnumName(predictedCategory.name)}'),
@@ -92,7 +93,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
           );
         }
       } catch (_) {
-        // Ignore errors to not interrupt UX
       } finally {
         if (mounted) {
           setState(() {
@@ -103,9 +103,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     });
   }
 
-  // Keypad input handler
   void _onKeypadTap(String value) {
-    HapticFeedback.lightCheck();
+    HapticFeedback.lightImpact();
     setState(() {
       if (value == '⌫') {
         if (_amountString.length > 1) {
@@ -121,7 +120,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         if (_amountString == '0') {
           _amountString = value;
         } else {
-          // Limit to 2 decimal places maximum
           if (_amountString.contains('.')) {
             final decimals = _amountString.split('.')[1];
             if (decimals.length < 2) {
@@ -137,7 +135,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final double amount = double.tryParse(_amountString) ?? 0.0;
+    final amount = double.tryParse(_amountString) ?? 0.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -155,34 +153,29 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         key: _formKey,
         child: Column(
           children: [
-            // Premium Large Banking Amount Display
             Expanded(
               child: Container(
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24.0,
-                  vertical: 16.0,
-                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
                       'AMOUNT',
                       style: TextStyle(
-                        fontSize: 12.0,
+                        fontSize: 12,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 2.0,
+                        letterSpacing: 2,
                         color: Theme.of(context).colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 8.0),
+                    const SizedBox(height: 8),
                     FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
-                        '💵\$amount',
-                        style: Theme.of(context).textTheme.displayLarge
-                            ?.copyWith(
+                        r'💵$amount',
+                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
                               fontWeight: FontWeight.w800,
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
@@ -192,14 +185,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 ),
               ),
             ),
-
-            // Scrollable Forms & Input Panels
             Container(
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(
-                  top: Radius.circular(32.0),
-                ),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.05),
@@ -212,8 +201,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 10.0),
-                        // Title Input
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+                    child: Column(
+                      children: [
                         TextFormField(
                           controller: _titleController,
                           onChanged: _onTitleChanged,
@@ -222,7 +212,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             prefixIcon: const Icon(Icons.description),
                             suffixIcon: _isPredictingCategory 
                                 ? const Padding(
-                                    padding: EdgeInsets.all(12.0),
+                                    padding: EdgeInsets.all(12),
                                     child: SizedBox(
                                       width: 16, height: 16, 
                                       child: CircularProgressIndicator(strokeWidth: 2),
@@ -230,60 +220,37 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                   ) 
                                 : null,
                             border: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(
-                                Radius.circular(12.0),
-                              ),
+                              borderRadius: BorderRadius.all(Radius.circular(12)),
                             ),
                           ),
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter a title';
-                            }
+                            if (value == null || value.trim().isEmpty) return 'Please enter a title';
                             return null;
                           },
                         ),
-                        ),
-                        const SizedBox(height: 16.0),
-
-                        // Date & Time Picker Row (Preserves precise timestamps)
+                        const SizedBox(height: 16),
                         Row(
                           children: [
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.calendar_month),
-                                label: Text(
-                                  DateFormat(
-                                    'MMM d, yyyy',
-                                  ).format(_selectedDateTime),
-                                ),
+                                label: Text(DateFormat('MMM d, yyyy').format(_selectedDateTime)),
                                 onPressed: () => _pickDate(context),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16.0,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12.0),
-                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 12.0),
+                            const SizedBox(width: 12),
                             Expanded(
                               child: OutlinedButton.icon(
                                 icon: const Icon(Icons.access_time),
-                                label: Text(
-                                  DateFormat(
-                                    'h:mm a',
-                                  ).format(_selectedDateTime),
-                                ),
+                                label: Text(DateFormat('h:mm a').format(_selectedDateTime)),
                                 onPressed: () => _pickTime(context),
                                 style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16.0,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12.0),
-                                  ),
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 ),
                               ),
                             ),
@@ -292,39 +259,24 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       ],
                     ),
                   ),
-
-                  // Category Selector (Horizontal Scroll with Haptics)
                   SingleChildScrollView(
                     scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 8.0,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                     child: Row(
                       children: ExpenseCategory.values.map((category) {
                         final isSelected = _selectedCategory == category;
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
+                          padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
-                            avatar: Icon(
-                              _getCategoryIcon(category),
-                              size: 16,
-                              color: isSelected ? Colors.white : null,
-                            ),
+                            avatar: Icon(_getCategoryIcon(category), size: 16, color: isSelected ? Colors.white : null),
                             label: Text(_formatEnumName(category.name)),
                             selected: isSelected,
-                            selectedColor: Theme.of(
-                              context,
-                            ).colorScheme.primary,
-                            labelStyle: TextStyle(
-                              color: isSelected ? Colors.white : null,
-                            ),
+                            selectedColor: Theme.of(context).colorScheme.primary,
+                            labelStyle: TextStyle(color: isSelected ? Colors.white : null),
                             onSelected: (selected) {
                               if (selected) {
                                 HapticFeedback.selectionClick();
-                                setState(() {
-                                  _selectedCategory = category;
-                                });
+                                setState(() { _selectedCategory = category; });
                               }
                             },
                           ),
@@ -332,97 +284,36 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       }).toList(),
                     ),
                   ),
-
-                  // Additional Note (Collapsible)
-                  ExpansionTile(
-                    title: const Text(
-                      'Add notes & receipts',
-                      style: TextStyle(fontSize: 14.0),
-                    ),
-                    leading: const Icon(Icons.more_horiz),
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20.0,
-                          vertical: 8.0,
-                        ),
-                        child: Column(
-                          children: [
-                            TextFormField(
-                              controller: _noteController,
-                              decoration: const InputDecoration(
-                                hintText: 'Enter note description...',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(
-                                    Radius.circular(12.0),
-                                  ),
-                                ),
-                              ),
-                              maxLines: 2,
-                            ),
-                            const SizedBox(height: 12.0),
-                            OutlinedButton.icon(
-                              icon: const Icon(Icons.camera_alt),
-                              label: const Text('Attach Receipt Photo'),
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Camera access placeholder'),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Elegant Numeric Keypad Grid
                   Container(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerLow.withOpacity(0.5),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 16.0,
-                      horizontal: 24.0,
-                    ),
+                    color: Theme.of(context).colorScheme.surfaceContainerLow.withOpacity(0.5),
+                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
                     child: Column(
                       children: [
                         _buildKeypadRow(['1', '2', '3']),
-                        const SizedBox(height: 12.0),
+                        const SizedBox(height: 12),
                         _buildKeypadRow(['4', '5', '6']),
-                        const SizedBox(height: 12.0),
+                        const SizedBox(height: 12),
                         _buildKeypadRow(['7', '8', '9']),
-                        const SizedBox(height: 12.0),
+                        const SizedBox(height: 12),
                         _buildKeypadRow(['.', '0', '⌫']),
                       ],
                     ),
                   ),
-
-                  // Floating Glowing Save Action Button
                   Padding(
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(20),
                     child: SizedBox(
                       width: double.infinity,
-                      height: 54.0,
+                      height: 54,
                       child: ElevatedButton.icon(
                         icon: Icon(_isEditMode ? Icons.check : Icons.save),
                         label: Text(
                           _isEditMode ? 'Update Spend' : 'Save Spend',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary,
+                          backgroundColor: Theme.of(context).colorScheme.primary,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16.0),
-                          ),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                         ),
                         onPressed: amount > 0 ? _saveExpense : null,
                       ),
@@ -437,39 +328,32 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
   }
 
-  // Keypad row widget helper
   Widget _buildKeypadRow(List<String> keys) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: keys.map((key) {
         return Expanded(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6.0),
+            padding: const EdgeInsets.symmetric(horizontal: 6),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
                 onTap: () => _onKeypadTap(key),
-                borderRadius: BorderRadius.circular(16.0),
+                borderRadius: BorderRadius.circular(16),
                 child: Container(
                   height: 52,
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16.0),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.outlineVariant.withOpacity(0.3),
-                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3)),
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     key,
                     style: TextStyle(
-                      fontSize: 22.0,
+                      fontSize: 22,
                       fontWeight: FontWeight.w600,
-                      color: key == '⌫'
-                          ? Colors.red
-                          : Theme.of(context).colorScheme.onSurface,
+                      color: key == '⌫' ? Colors.red : Theme.of(context).colorScheme.onSurface,
                     ),
                   ),
                 ),
@@ -481,28 +365,23 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
   }
 
-  // Saves or updates the expense
-  void _saveExpense() async {
+  Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final double amount = double.tryParse(_amountString) ?? 0.0;
+    final amount = double.tryParse(_amountString) ?? 0.0;
     if (amount <= 0) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter an amount greater than 0')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter an amount greater than 0')));
       return;
     }
 
     final repo = ref.read(expenseRepositoryProvider);
-    final isarUser = ''; // Empty string represents guest session
+    const isarUser = ''; 
 
     if (_isEditMode) {
       final updated = widget.existingExpense!.copyWith(
         amount: amount,
         title: _titleController.text.trim(),
-        note: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
+        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         category: _selectedCategory,
         date: _selectedDateTime,
         receiptImageUrl: _receiptImagePath,
@@ -510,7 +389,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       );
 
       await repo.updateExpense(updated);
-      // Trigger live pattern calculations
       await PatternDetector.onExpenseAdded(updated);
     } else {
       final newExpense = Expense(
@@ -521,45 +399,30 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         category: _selectedCategory,
         date: _selectedDateTime,
         title: _titleController.text.trim(),
-        note: _noteController.text.trim().isEmpty
-            ? null
-            : _noteController.text.trim(),
+        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         receiptImageUrl: _receiptImagePath,
-        isSynced: false,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
       await repo.addExpense(newExpense);
-      // Trigger live pattern calculations
       await PatternDetector.onExpenseAdded(newExpense);
     }
 
     HapticFeedback.heavyImpact();
-    if (mounted) {
-      context.pop();
-    }
+    if (mounted) context.pop();
   }
 
-  // Deletes the active edit expense
-  void _confirmDelete() async {
-    final bool? confirm = await showDialog<bool>(
+  Future<void> _confirmDelete() async {
+    final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Spend?'),
-        content: const Text(
-          'Are you sure you want to permanently delete this expense?',
-        ),
+        content: const Text('Are you sure you want to permanently delete this expense?'),
         actions: [
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.of(context).pop(false),
-          ),
+          TextButton(child: const Text('Cancel'), onPressed: () => Navigator.of(context).pop(false)),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: const Text('Delete'),
             onPressed: () => Navigator.of(context).pop(true),
           ),
@@ -568,18 +431,13 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
 
     if (confirm == true && mounted) {
-      await ref
-          .read(expenseRepositoryProvider)
-          .deleteExpense(widget.existingExpense!.id);
-      if (mounted) {
-        context.pop(); // Close form
-      }
+      await ref.read(expenseRepositoryProvider).deleteExpense(widget.existingExpense!.id);
+      if (mounted) context.pop();
     }
   }
 
-  // Pickers
-  void _pickDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
+  Future<void> _pickDate(BuildContext context) async {
+    final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDateTime,
       firstDate: DateTime(2020),
@@ -587,53 +445,33 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
     if (picked != null) {
       setState(() {
-        _selectedDateTime = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          _selectedDateTime.hour,
-          _selectedDateTime.minute,
-        );
+        _selectedDateTime = DateTime(picked.year, picked.month, picked.day, _selectedDateTime.hour, _selectedDateTime.minute);
       });
     }
   }
 
-  void _pickTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
+  Future<void> _pickTime(BuildContext context) async {
+    final picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay.fromDateTime(_selectedDateTime),
     );
     if (picked != null) {
       setState(() {
-        _selectedDateTime = DateTime(
-          _selectedDateTime.year,
-          _selectedDateTime.month,
-          _selectedDateTime.day,
-          picked.hour,
-          picked.minute,
-        );
+        _selectedDateTime = DateTime(_selectedDateTime.year, _selectedDateTime.month, _selectedDateTime.day, picked.hour, picked.minute);
       });
     }
   }
 
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
-      case ExpenseCategory.food:
-        return Icons.restaurant;
-      case ExpenseCategory.transport:
-        return Icons.directions_car;
-      case ExpenseCategory.utilities:
-        return Icons.electrical_services;
-      case ExpenseCategory.entertainment:
-        return Icons.movie;
-      case ExpenseCategory.shopping:
-        return Icons.shopping_bag;
-      case ExpenseCategory.health:
-        return Icons.medical_services;
-      case ExpenseCategory.education:
-        return Icons.school;
-      case ExpenseCategory.other:
-        return Icons.more_horiz;
+      case ExpenseCategory.food: return Icons.restaurant;
+      case ExpenseCategory.transport: return Icons.directions_car;
+      case ExpenseCategory.utilities: return Icons.electrical_services;
+      case ExpenseCategory.entertainment: return Icons.movie;
+      case ExpenseCategory.shopping: return Icons.shopping_bag;
+      case ExpenseCategory.health: return Icons.medical_services;
+      case ExpenseCategory.education: return Icons.school;
+      case ExpenseCategory.other: return Icons.more_horiz;
     }
   }
 

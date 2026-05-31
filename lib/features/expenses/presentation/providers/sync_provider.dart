@@ -1,9 +1,9 @@
+import 'package:expense/features/auth/presentation/auth_provider.dart';
+import 'package:expense/features/expenses/data/remote/expense_remote_datasource.dart';
+import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/auth_provider.dart';
-import '../data/remote/expense_remote_datasource.dart';
-import 'expense_provider.dart';
 
-final expenseRemoteDatasourceProvider = Provider((ref) {
+final Provider<ExpenseRemoteDatasource> expenseRemoteDatasourceProvider = Provider((ref) {
   return ExpenseRemoteDatasource();
 });
 
@@ -26,7 +26,5 @@ final activeCloudSyncProvider = Provider<void>((ref) {
     }
   });
 
-  ref.onDispose(() {
-    sub.cancel();
-  });
+  ref.onDispose(sub.cancel);
 });

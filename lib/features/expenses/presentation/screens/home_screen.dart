@@ -1,11 +1,11 @@
+import 'package:expense/features/expenses/domain/models/expense.dart';
+import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
+import 'package:expense/features/expenses/presentation/providers/sync_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import '../../domain/models/expense.dart';
-import '../providers/expense_provider.dart';
-import '../providers/sync_provider.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -40,7 +40,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Premium App Bar & Search Header
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
@@ -87,8 +87,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
+                    horizontal: 16,
+                    vertical: 8,
                   ),
                   child: SearchBar(
                     hintText: 'Search spending...',
@@ -110,7 +110,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         _searchQuery = value;
                       });
                     },
-                    elevation: WidgetStateProperty.all(0.0),
+                    elevation: WidgetStateProperty.all(0),
                     backgroundColor: WidgetStateProperty.all(
                       Theme.of(
                         context,
@@ -123,7 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Glassmorphism Spending Card
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16),
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
@@ -136,7 +136,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(24.0),
+                      borderRadius: BorderRadius.circular(24),
                       boxShadow: [
                         BoxShadow(
                           color: Theme.of(
@@ -147,7 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ],
                     ),
-                    padding: const EdgeInsets.all(20.0),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -167,7 +167,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             const Icon(Icons.trending_up, color: Colors.green),
                           ],
                         ),
-                        const SizedBox(height: 8.0),
+                        const SizedBox(height: 8),
                         totalSpentAsync.when(
                           data: (total) => Text(
                             '💵${total.toStringAsFixed(2)}',
@@ -184,12 +184,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             width: 36,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           ),
-                          error: (_, __) => Text(
+                          error: (_, _) => Text(
                             '💵0.00',
                             style: Theme.of(context).textTheme.headlineLarge,
                           ),
                         ),
-                        const SizedBox(height: 16.0),
+                        const SizedBox(height: 16),
                         // Budget progress bar (Mocked for Guest mode until Budget Screen is fully set up)
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -216,9 +216,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6.0),
+                        const SizedBox(height: 6),
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(4.0),
+                          borderRadius: BorderRadius.circular(4),
                           child: const LinearProgressIndicator(
                             value: 0.70,
                             backgroundColor: Colors.white24,
@@ -238,8 +238,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 child: SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0,
-                    vertical: 8.0,
+                    horizontal: 16,
+                    vertical: 8,
                   ),
                   child: Row(
                     children: [
@@ -254,10 +254,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           }
                         },
                       ),
-                      const SizedBox(width: 8.0),
+                      const SizedBox(width: 8),
                       ...ExpenseCategory.values.map((category) {
                         return Padding(
-                          padding: const EdgeInsets.only(right: 8.0),
+                          padding: const EdgeInsets.only(right: 8),
                           child: ChoiceChip(
                             avatar: Icon(
                               _getCategoryIcon(category),
@@ -281,11 +281,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Expenses List Header
               const SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0),
+                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
                   child: Text(
                     'Recent Spending',
                     style: TextStyle(
-                      fontSize: 18.0,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -315,7 +315,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   }).toList();
 
                   if (filteredList.isEmpty) {
-                    return const SliverFillRemaining(
+                    return SliverFillRemaining(
                       hasScrollBody: false,
                       child: Center(
                         child: Column(
@@ -329,8 +329,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 color: Colors.grey,
                               ),
                             ),
-                            SizedBox(height: 16),
-                            Text(
+                            const SizedBox(height: 16),
+                            const Text(
                               'No expenses found',
                               style: TextStyle(
                                 fontSize: 16,
@@ -338,8 +338,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 color: Colors.grey,
                               ),
                             ),
-                            SizedBox(height: 4),
-                            Text(
+                            const SizedBox(height: 4),
+                            const Text(
                               'Try modifying your search or add a new expense.',
                               style: TextStyle(
                                 fontSize: 12,
@@ -353,7 +353,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   }
 
                   // Group expenses by calendar date
-                  final Map<String, List<Expense>> groupedExpenses = {};
+                  final groupedExpenses = <String, List<Expense>>{};
                   for (final exp in filteredList) {
                     final dateStr = DateFormat(
                       'EEEE, MMMM d, yyyy',
@@ -378,10 +378,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             // Date header
                             Padding(
                               padding: const EdgeInsets.fromLTRB(
-                                16.0,
-                                16.0,
-                                16.0,
-                                8.0,
+                                16,
+                                16,
+                                16,
+                                8,
                               ),
                               child: Text(
                                 dateStr,
@@ -474,7 +474,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ),
               ),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 80.0)),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
             ],
           ),
         ),
@@ -534,8 +534,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   // Opens a month and year selector dialog
-  void _showMonthPicker(BuildContext context) async {
-    final DateTime? selected = await showDatePicker(
+  Future<void> _showMonthPicker(BuildContext context) async {
+    final selected = await showDatePicker(
       context: context,
       initialDate: _selectedMonth,
       firstDate: DateTime(2020),

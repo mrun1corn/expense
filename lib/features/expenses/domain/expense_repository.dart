@@ -1,4 +1,4 @@
-import '../models/expense.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
 
 abstract class ExpenseRepository {
   Stream<List<Expense>> watchExpenses();

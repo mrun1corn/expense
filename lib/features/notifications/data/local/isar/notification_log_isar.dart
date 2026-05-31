@@ -1,5 +1,5 @@
+import 'package:expense/features/notifications/domain/models/notification_log.dart';
 import 'package:isar/isar.dart';
-import '../../../domain/models/notification_log.dart';
 
 part 'notification_log_isar.g.dart';
 

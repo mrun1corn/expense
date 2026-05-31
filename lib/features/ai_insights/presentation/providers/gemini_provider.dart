@@ -1,6 +1,6 @@
+import 'package:expense/features/ai_insights/data/remote/gemini_datasource.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../data/remote/gemini_datasource.dart';
 
-final geminiDatasourceProvider = Provider((ref) {
+final Provider<GeminiDatasource> geminiDatasourceProvider = Provider((ref) {
   return GeminiDatasource();
 });

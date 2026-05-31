@@ -1,11 +1,11 @@
-import '../domain/auth_repository.dart';
-import '../domain/models/user_model.dart';
-import 'firebase_auth_datasource.dart';
+import 'package:expense/features/auth/data/firebase_auth_datasource.dart';
+import 'package:expense/features/auth/domain/auth_repository.dart';
+import 'package:expense/features/auth/domain/models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final FirebaseAuthDatasource _datasource;
 
   AuthRepositoryImpl(this._datasource);
+  final FirebaseAuthDatasource _datasource;
 
   @override
   Stream<UserModel?> get authStateChanges => _datasource.authStateChanges;

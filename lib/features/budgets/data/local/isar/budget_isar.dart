@@ -1,6 +1,6 @@
+import 'package:expense/features/budgets/domain/models/budget.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:isar/isar.dart';
-import '../../../../domain/models/budget.dart';
-import '../../../expenses/domain/models/expense.dart';
 
 part 'budget_isar.g.dart';
 

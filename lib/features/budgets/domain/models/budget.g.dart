@@ -14,8 +14,8 @@ _$BudgetImpl _$$BudgetImplFromJson(Map<String, dynamic> json) => _$BudgetImpl(
       currency: json['currency'] as String,
       month: (json['month'] as num).toInt(),
       year: (json['year'] as num).toInt(),
-      spentAmount: (json['spentAmount'] as num?)?.toDouble() ?? 0.0,
       createdAt: DateTime.parse(json['createdAt'] as String),
+      spentAmount: (json['spentAmount'] as num?)?.toDouble() ?? 0.0,
     );
 
 Map<String, dynamic> _$$BudgetImplToJson(_$BudgetImpl instance) =>
@@ -27,8 +27,8 @@ Map<String, dynamic> _$$BudgetImplToJson(_$BudgetImpl instance) =>
       'currency': instance.currency,
       'month': instance.month,
       'year': instance.year,
-      'spentAmount': instance.spentAmount,
       'createdAt': instance.createdAt.toIso8601String(),
+      'spentAmount': instance.spentAmount,
     };
 
 const _$ExpenseCategoryEnumMap = {

@@ -29,11 +29,11 @@ mixin _$Expense {
   DateTime get date =>
       throw _privateConstructorUsedError; // full timestamp (date + time)
   String get title => throw _privateConstructorUsedError;
+  DateTime get createdAt => throw _privateConstructorUsedError;
+  DateTime get updatedAt => throw _privateConstructorUsedError;
   String? get note => throw _privateConstructorUsedError;
   String? get receiptImageUrl => throw _privateConstructorUsedError;
   bool get isSynced => throw _privateConstructorUsedError;
-  DateTime get createdAt => throw _privateConstructorUsedError;
-  DateTime get updatedAt => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -53,11 +53,11 @@ abstract class $ExpenseCopyWith<$Res> {
       ExpenseCategory category,
       DateTime date,
       String title,
+      DateTime createdAt,
+      DateTime updatedAt,
       String? note,
       String? receiptImageUrl,
-      bool isSynced,
-      DateTime createdAt,
-      DateTime updatedAt});
+      bool isSynced});
 }
 
 /// @nodoc
@@ -80,11 +80,11 @@ class _$ExpenseCopyWithImpl<$Res, $Val extends Expense>
     Object? category = null,
     Object? date = null,
     Object? title = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
     Object? note = freezed,
     Object? receiptImageUrl = freezed,
     Object? isSynced = null,
-    Object? createdAt = null,
-    Object? updatedAt = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -115,6 +115,14 @@ class _$ExpenseCopyWithImpl<$Res, $Val extends Expense>
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
       note: freezed == note
           ? _value.note
           : note // ignore: cast_nullable_to_non_nullable
@@ -127,14 +135,6 @@ class _$ExpenseCopyWithImpl<$Res, $Val extends Expense>
           ? _value.isSynced
           : isSynced // ignore: cast_nullable_to_non_nullable
               as bool,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
     ) as $Val);
   }
 }
@@ -154,11 +154,11 @@ abstract class _$$ExpenseImplCopyWith<$Res> implements $ExpenseCopyWith<$Res> {
       ExpenseCategory category,
       DateTime date,
       String title,
+      DateTime createdAt,
+      DateTime updatedAt,
       String? note,
       String? receiptImageUrl,
-      bool isSynced,
-      DateTime createdAt,
-      DateTime updatedAt});
+      bool isSynced});
 }
 
 /// @nodoc
@@ -179,11 +179,11 @@ class __$$ExpenseImplCopyWithImpl<$Res>
     Object? category = null,
     Object? date = null,
     Object? title = null,
+    Object? createdAt = null,
+    Object? updatedAt = null,
     Object? note = freezed,
     Object? receiptImageUrl = freezed,
     Object? isSynced = null,
-    Object? createdAt = null,
-    Object? updatedAt = null,
   }) {
     return _then(_$ExpenseImpl(
       id: null == id
@@ -214,6 +214,14 @@ class __$$ExpenseImplCopyWithImpl<$Res>
           ? _value.title
           : title // ignore: cast_nullable_to_non_nullable
               as String,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      updatedAt: null == updatedAt
+          ? _value.updatedAt
+          : updatedAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
       note: freezed == note
           ? _value.note
           : note // ignore: cast_nullable_to_non_nullable
@@ -226,14 +234,6 @@ class __$$ExpenseImplCopyWithImpl<$Res>
           ? _value.isSynced
           : isSynced // ignore: cast_nullable_to_non_nullable
               as bool,
-      createdAt: null == createdAt
-          ? _value.createdAt
-          : createdAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
-      updatedAt: null == updatedAt
-          ? _value.updatedAt
-          : updatedAt // ignore: cast_nullable_to_non_nullable
-              as DateTime,
     ));
   }
 }
@@ -249,11 +249,11 @@ class _$ExpenseImpl implements _Expense {
       required this.category,
       required this.date,
       required this.title,
+      required this.createdAt,
+      required this.updatedAt,
       this.note,
       this.receiptImageUrl,
-      this.isSynced = false,
-      required this.createdAt,
-      required this.updatedAt});
+      this.isSynced = false});
 
   factory _$ExpenseImpl.fromJson(Map<String, dynamic> json) =>
       _$$ExpenseImplFromJson(json);
@@ -276,20 +276,20 @@ class _$ExpenseImpl implements _Expense {
   @override
   final String title;
   @override
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
+  @override
   final String? note;
   @override
   final String? receiptImageUrl;
   @override
   @JsonKey()
   final bool isSynced;
-  @override
-  final DateTime createdAt;
-  @override
-  final DateTime updatedAt;
 
   @override
   String toString() {
-    return 'Expense(id: $id, userId: $userId, amount: $amount, currency: $currency, category: $category, date: $date, title: $title, note: $note, receiptImageUrl: $receiptImageUrl, isSynced: $isSynced, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Expense(id: $id, userId: $userId, amount: $amount, currency: $currency, category: $category, date: $date, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, note: $note, receiptImageUrl: $receiptImageUrl, isSynced: $isSynced)';
   }
 
   @override
@@ -306,15 +306,15 @@ class _$ExpenseImpl implements _Expense {
                 other.category == category) &&
             (identical(other.date, date) || other.date == date) &&
             (identical(other.title, title) || other.title == title) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.updatedAt, updatedAt) ||
+                other.updatedAt == updatedAt) &&
             (identical(other.note, note) || other.note == note) &&
             (identical(other.receiptImageUrl, receiptImageUrl) ||
                 other.receiptImageUrl == receiptImageUrl) &&
             (identical(other.isSynced, isSynced) ||
-                other.isSynced == isSynced) &&
-            (identical(other.createdAt, createdAt) ||
-                other.createdAt == createdAt) &&
-            (identical(other.updatedAt, updatedAt) ||
-                other.updatedAt == updatedAt));
+                other.isSynced == isSynced));
   }
 
   @JsonKey(ignore: true)
@@ -328,11 +328,11 @@ class _$ExpenseImpl implements _Expense {
       category,
       date,
       title,
+      createdAt,
+      updatedAt,
       note,
       receiptImageUrl,
-      isSynced,
-      createdAt,
-      updatedAt);
+      isSynced);
 
   @JsonKey(ignore: true)
   @override
@@ -357,11 +357,11 @@ abstract class _Expense implements Expense {
       required final ExpenseCategory category,
       required final DateTime date,
       required final String title,
+      required final DateTime createdAt,
+      required final DateTime updatedAt,
       final String? note,
       final String? receiptImageUrl,
-      final bool isSynced,
-      required final DateTime createdAt,
-      required final DateTime updatedAt}) = _$ExpenseImpl;
+      final bool isSynced}) = _$ExpenseImpl;
 
   factory _Expense.fromJson(Map<String, dynamic> json) = _$ExpenseImpl.fromJson;
 
@@ -380,15 +380,15 @@ abstract class _Expense implements Expense {
   @override // full timestamp (date + time)
   String get title;
   @override
+  DateTime get createdAt;
+  @override
+  DateTime get updatedAt;
+  @override
   String? get note;
   @override
   String? get receiptImageUrl;
   @override
   bool get isSynced;
-  @override
-  DateTime get createdAt;
-  @override
-  DateTime get updatedAt;
   @override
   @JsonKey(ignore: true)
   _$$ExpenseImplCopyWith<_$ExpenseImpl> get copyWith =>

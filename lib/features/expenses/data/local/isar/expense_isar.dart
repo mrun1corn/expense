@@ -1,5 +1,5 @@
+import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:isar/isar.dart';
-import '../../../../domain/models/expense.dart';
 
 part 'expense_isar.g.dart';
 

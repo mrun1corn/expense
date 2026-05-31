@@ -1,17 +1,18 @@
+import 'package:expense/core/db/isar_service.dart';
+import 'package:expense/features/expenses/data/expense_repository_impl.dart';
+import 'package:expense/features/expenses/data/local/expense_local_datasource.dart';
+import 'package:expense/features/expenses/domain/expense_repository.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/expense.dart';
-import '../../domain/expense_repository.dart';
-import '../../data/expense_repository_impl.dart';
-import '../../data/local/expense_local_datasource.dart';
-import '../../../../core/db/isar_service.dart';
+import 'package:isar/isar.dart';
 
 // Provides the Isar instance
-final isarProvider = Provider((ref) {
+final Provider<Isar> isarProvider = Provider((ref) {
   return IsarService.instance.isar;
 });
 
 // Provides the local datasource
-final expenseLocalDatasourceProvider = Provider((ref) {
+final Provider<ExpenseLocalDatasource> expenseLocalDatasourceProvider = Provider((ref) {
   final isar = ref.watch(isarProvider);
   return ExpenseLocalDatasource(isar);
 });
@@ -29,14 +30,14 @@ final expensesStreamProvider = StreamProvider<List<Expense>>((ref) {
 });
 
 // Provides expenses for a specific month and year
-final monthlyExpensesProvider =
+final FutureProviderFamily<List<Expense>, ({int month, int year})> monthlyExpensesProvider =
     FutureProvider.family<List<Expense>, ({int month, int year})>((ref, arg) {
       final repository = ref.watch(expenseRepositoryProvider);
       return repository.getExpensesByMonth(arg.month, arg.year);
     });
 
 // Provides category totals for a date range
-final categoryTotalsProvider =
+final FutureProviderFamily<Map<ExpenseCategory, double>, ({DateTime from, DateTime to})> categoryTotalsProvider =
     FutureProvider.family<
       Map<ExpenseCategory, double>,
       ({DateTime from, DateTime to})
@@ -46,18 +47,12 @@ final categoryTotalsProvider =
     });
 
 // Provides the total amount spent in the current month
-final totalThisMonthProvider = StreamProvider<double>((ref) {
-  return ref.watch(expensesStreamProvider).select((asyncList) {
-    return asyncList.when(
-      data: (list) {
-        final now = DateTime.now();
-        return list
-            .where((e) => e.date.month == now.month && e.date.year == now.year)
-            .fold(0.0, (sum, item) => sum + item.amount);
-      },
-      error: (_, __) => 0.0,
-      loading: () => 0.0,
-    );
+final totalThisMonthProvider = Provider<AsyncValue<double>>((ref) {
+  return ref.watch(expensesStreamProvider).whenData((list) {
+    final now = DateTime.now();
+    return list
+        .where((e) => e.date.month == now.month && e.date.year == now.year)
+        .fold(0, (sum, item) => sum + item.amount);
   });
 });
 

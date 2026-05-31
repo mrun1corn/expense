@@ -1,10 +1,11 @@
+import 'package:expense/features/ai_insights/presentation/screens/ai_insights_screen.dart';
+import 'package:expense/features/analytics/presentation/screens/analytics_screen.dart';
+import 'package:expense/features/auth/presentation/auth_provider.dart';
+import 'package:expense/features/expenses/presentation/screens/home_screen.dart';
+import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
+import 'package:expense/features/settings/presentation/screens/settings_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../auth/presentation/auth_provider.dart';
-import '../../../expenses/presentation/screens/home_screen.dart';
-import '../../../analytics/presentation/screens/analytics_screen.dart';
-import '../../../ai_insights/presentation/screens/ai_insights_screen.dart';
-import '../../../settings/presentation/screens/settings_screen.dart';
 
 class MainShellScreen extends ConsumerStatefulWidget {
   const MainShellScreen({super.key});
@@ -26,6 +27,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   @override
   Widget build(BuildContext context) {
     final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final hasApiKey = ref.watch(apiKeyProvider).isNotEmpty;
 
     return Scaffold(
       body: IndexedStack(
@@ -52,7 +54,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
           ),
           NavigationDestination(
             icon: Badge(
-              isLabelVisible: !isAuthenticated,
+              isLabelVisible: !isAuthenticated && !hasApiKey,
               label: const Icon(
                 Icons.lock,
                 size: 10,

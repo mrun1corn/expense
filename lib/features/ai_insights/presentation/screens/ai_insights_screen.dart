@@ -1,11 +1,12 @@
 import 'dart:convert';
+
+import 'package:expense/features/ai_insights/presentation/providers/gemini_provider.dart';
+import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../expenses/presentation/providers/expense_provider.dart';
-import '../providers/gemini_provider.dart';
 
-final monthlySummaryProvider = FutureProvider.autoDispose<String>((ref) async {
+final AutoDisposeFutureProvider<String> monthlySummaryProvider = FutureProvider.autoDispose<String>((ref) async {
   final expenses = await ref.watch(last60DaysProvider.future);
   
   if (expenses.isEmpty) {
@@ -28,7 +29,7 @@ final monthlySummaryProvider = FutureProvider.autoDispose<String>((ref) async {
   }).toList());
 
   final gemini = ref.watch(geminiDatasourceProvider);
-  return await gemini.generateMonthlySummary(summaryJson);
+  return gemini.generateMonthlySummary(summaryJson);
 });
 
 class AiInsightsScreen extends ConsumerWidget {
@@ -44,7 +45,7 @@ class AiInsightsScreen extends ConsumerWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -59,21 +60,21 @@ class AiInsightsScreen extends ConsumerWidget {
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.all(20),
                   child: summaryAsync.when(
                     data: (summary) => Text(
                       summary,
                       style: const TextStyle(fontSize: 16, height: 1.5),
                     ),
-                    loading: () => Column(
+                    loading: () => const Column(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         CircularProgressIndicator(),
                         SizedBox(height: 16),
                         Text('Gemini is analyzing your spending...'),
                       ],
                     ),
-                    error: (err, _) => Text('Error: \$err'),
+                    error: (err, _) => const Text(r'Error: $err'),
                   ),
                 ),
               ),

@@ -1,5 +1,5 @@
+import 'package:expense/features/ai_insights/domain/models/chat_message.dart';
 import 'package:isar/isar.dart';
-import '../../domain/models/chat_message.dart';
 
 part 'chat_message_isar.g.dart';
 

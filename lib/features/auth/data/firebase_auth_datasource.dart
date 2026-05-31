@@ -1,6 +1,6 @@
+import 'package:expense/features/auth/domain/models/user_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import '../domain/models/user_model.dart';
 
 class FirebaseAuthDatasource {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -21,18 +21,18 @@ class FirebaseAuthDatasource {
 
   Future<UserModel?> signInWithGoogle() async {
     try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final googleUser = await _googleSignIn.signIn();
       if (googleUser == null) return null; // user canceled
 
-      final GoogleSignInAuthentication googleAuth =
+      final googleAuth =
           await googleUser.authentication;
 
-      final OAuthCredential credential = GoogleAuthProvider.credential(
+      final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final UserCredential userCredential = await _auth.signInWithCredential(
+      final userCredential = await _auth.signInWithCredential(
         credential,
       );
 

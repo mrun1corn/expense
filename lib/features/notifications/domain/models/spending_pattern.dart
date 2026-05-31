@@ -1,5 +1,5 @@
+import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../../expenses/domain/models/expense.dart';
 
 part 'spending_pattern.freezed.dart';
 part 'spending_pattern.g.dart';
@@ -19,16 +19,16 @@ class SpendingPattern with _$SpendingPattern {
     required PatternType type,
     required ExpenseCategory category,
     required double typicalAmount,
-    double? amountTolerance, // ±% acceptable variance (default 15%)
-    int? timeSlotHour, // hour of day the pattern peaks (e.g. 18 = 6pm)
-    int? timeSlotWindowMinutes, // how wide the time window is (e.g. 60)
-    int? dayOfWeek, // 1=Mon...7=Sun for weekly patterns
-    int? dayOfMonth, // for monthly patterns
-    required int occurrences, // how many times this was observed
-    required double confidence, // 0.0–1.0 (occurrences / possible slots)
+    required int occurrences,
+    required double confidence,
     required DateTime firstSeen,
     required DateTime lastSeen,
     required DateTime detectedAt,
+    double? amountTolerance,
+    int? timeSlotHour,
+    int? timeSlotWindowMinutes,
+    int? dayOfWeek,
+    int? dayOfMonth, // for monthly patterns
     @Default(false) bool notificationScheduled,
     @Default(false) bool isDismissed,
     @Default(false) bool isConfirmed, // user tapped "Yes, remind me"

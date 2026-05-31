@@ -1,17 +1,18 @@
+import 'package:expense/features/ai_insights/domain/models/gemini_prompts.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:http/http.dart' as http;
-import '../../domain/models/gemini_prompts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class _OAuthHttpClient extends http.BaseClient {
+
+  _OAuthHttpClient(this._token);
   final http.Client _inner = http.Client();
   final String _token;
 
-  _OAuthHttpClient(this._token);
-
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) {
-    request.headers['Authorization'] = 'Bearer \$_token';
+    request.headers['Authorization'] = 'Bearer $_token';
     return _inner.send(request);
   }
 }
@@ -20,6 +21,32 @@ class GeminiDatasource {
   final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   Future<GenerativeModel> _getModel({String? systemInstruction}) async {
+    // 1. Check if the user has entered their own API Key locally (Hermes-like flow)
+    final prefs = await SharedPreferences.getInstance();
+    final userKey = prefs.getString('user_gemini_api_key') ?? '';
+    if (userKey.isNotEmpty) {
+      return GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: userKey,
+        systemInstruction: systemInstruction != null
+            ? Content.system(systemInstruction)
+            : null,
+      );
+    }
+
+    // 2. Check if a static API Key is provided via Dart environment variables (recommended)
+    const staticKey = String.fromEnvironment('GEMINI_API_KEY');
+    if (staticKey.isNotEmpty) {
+      return GenerativeModel(
+        model: 'gemini-1.5-flash',
+        apiKey: staticKey,
+        systemInstruction: systemInstruction != null
+            ? Content.system(systemInstruction)
+            : null,
+      );
+    }
+
+    // 3. Fallback to OAuth Bearer Token if no static key is provided
     final googleUser = _googleSignIn.currentUser;
     if (googleUser == null) throw Exception('User not signed in');
 
@@ -31,7 +58,6 @@ class GeminiDatasource {
 
     return GenerativeModel(
       model: 'gemini-1.5-flash',
-      // We pass an empty string for apiKey because we use the Bearer token in the custom HTTP client
       apiKey: '',
       httpClient: httpClient,
       systemInstruction: systemInstruction != null
@@ -48,7 +74,7 @@ class GeminiDatasource {
       ]);
       return response.text?.trim() ?? 'other';
     } catch (e) {
-      print('Auto-categorize failed: \$e');
+      print(r'Auto-categorize failed: $e');
       return 'other';
     }
   }
@@ -91,6 +117,7 @@ class GeminiDatasource {
     } catch (e) {
       return 'Sorry, I am having trouble connecting right now.';
     }
+  }
 
   Future<String> generateNotificationCopy(
     String trigger,

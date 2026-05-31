@@ -1,11 +1,11 @@
-import '../domain/expense_repository.dart';
-import '../domain/models/expense.dart';
-import 'local/expense_local_datasource.dart';
+import 'package:expense/features/expenses/data/local/expense_local_datasource.dart';
+import 'package:expense/features/expenses/domain/expense_repository.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
 
 class ExpenseRepositoryImpl implements ExpenseRepository {
-  final ExpenseLocalDatasource _localDatasource;
 
   ExpenseRepositoryImpl(this._localDatasource);
+  final ExpenseLocalDatasource _localDatasource;
 
   @override
   Stream<List<Expense>> watchExpenses() {

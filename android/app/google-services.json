@@ -52,6 +52,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "878657617254-npcp06v3nr5e4n758f604f4hl4dp5045.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.mrun1corn.smexp",
+            "certificate_hash": "fe1a5f655a023ae5edb66098da96d12b7863a5da"
+          }
+        },
+        {
           "client_id": "878657617254-g461okbur00cpi2622jv1gkkjnru3oed.apps.googleusercontent.com",
           "client_type": 3
         }

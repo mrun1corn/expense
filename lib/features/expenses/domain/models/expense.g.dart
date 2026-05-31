@@ -15,11 +15,11 @@ _$ExpenseImpl _$$ExpenseImplFromJson(Map<String, dynamic> json) =>
       category: $enumDecode(_$ExpenseCategoryEnumMap, json['category']),
       date: DateTime.parse(json['date'] as String),
       title: json['title'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
       note: json['note'] as String?,
       receiptImageUrl: json['receiptImageUrl'] as String?,
       isSynced: json['isSynced'] as bool? ?? false,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
 
 Map<String, dynamic> _$$ExpenseImplToJson(_$ExpenseImpl instance) =>
@@ -31,11 +31,11 @@ Map<String, dynamic> _$$ExpenseImplToJson(_$ExpenseImpl instance) =>
       'category': _$ExpenseCategoryEnumMap[instance.category]!,
       'date': instance.date.toIso8601String(),
       'title': instance.title,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
       'note': instance.note,
       'receiptImageUrl': instance.receiptImageUrl,
       'isSynced': instance.isSynced,
-      'createdAt': instance.createdAt.toIso8601String(),
-      'updatedAt': instance.updatedAt.toIso8601String(),
     };
 
 const _$ExpenseCategoryEnumMap = {

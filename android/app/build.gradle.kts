@@ -11,7 +11,7 @@ plugins {
 
 android {
     namespace = "com.mrun1corn.smexp"
-    compileSdk = 34
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

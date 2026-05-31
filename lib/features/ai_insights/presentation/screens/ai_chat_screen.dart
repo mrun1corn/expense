@@ -1,9 +1,8 @@
+import 'package:expense/features/ai_insights/domain/models/chat_message.dart';
+import 'package:expense/features/ai_insights/presentation/providers/gemini_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_generative_ai/google_generative_ai.dart';
 import 'package:uuid/uuid.dart';
-import '../providers/gemini_provider.dart';
-import '../domain/models/chat_message.dart';
 
 final chatMessagesProvider = StateNotifierProvider<ChatNotifier, List<ChatMessage>>((ref) {
   return ChatNotifier();
@@ -34,7 +33,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     super.dispose();
   }
 
-  void _sendMessage() async {
+  Future<void> _sendMessage() async {
     final text = _controller.text.trim();
     if (text.isEmpty) return;
 
@@ -68,7 +67,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send message: \$e')),
+          const SnackBar(content: Text(r'Failed to send message: $e')),
         );
       }
     } finally {
@@ -119,11 +118,11 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
           ),
           if (_isLoading)
             const Padding(
-              padding: EdgeInsets.all(8.0),
+              padding: EdgeInsets.all(8),
               child: CircularProgressIndicator(),
             ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(8),
             child: Row(
               children: [
                 Expanded(

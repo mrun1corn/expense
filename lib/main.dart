@@ -1,12 +1,12 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:expense/core/db/isar_service.dart';
+import 'package:expense/core/router/app_router.dart';
+import 'package:expense/core/utils/notification_manager.dart';
+import 'package:expense/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
-import 'core/utils/notification_manager.dart';
-import 'core/router/app_router.dart';
-import 'firebase_options.dart';
-import 'core/db/isar_service.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -51,7 +51,6 @@ class SmartExpenseApp extends ConsumerWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
-          brightness: Brightness.light,
         ),
         useMaterial3: true,
       ),
@@ -62,7 +61,6 @@ class SmartExpenseApp extends ConsumerWidget {
         ),
         useMaterial3: true,
       ),
-      themeMode: ThemeMode.system,
       routerConfig: goRouter,
     );
   }

@@ -1,17 +1,17 @@
+import 'package:expense/features/ai_insights/data/local/isar/chat_message_isar.dart';
+import 'package:expense/features/budgets/data/local/isar/budget_isar.dart';
+import 'package:expense/features/expenses/data/local/isar/expense_isar.dart';
+import 'package:expense/features/notifications/data/local/isar/notification_log_isar.dart';
+import 'package:expense/features/notifications/data/local/isar/spending_pattern_isar.dart';
 import 'package:isar/isar.dart';
 import 'package:path_provider/path_provider.dart';
-import '../../features/expenses/data/local/isar/expense_isar.dart';
-import '../../features/budgets/data/local/isar/budget_isar.dart';
-import '../../features/notifications/data/local/isar/spending_pattern_isar.dart';
-import '../../features/notifications/data/local/isar/notification_log_isar.dart';
-import '../../features/ai_insights/data/local/isar/chat_message_isar.dart';
 
 class IsarService {
-  static const String _dbName = 'smart_expense_tracker';
-  late final Isar isar;
 
   // Private constructor
   IsarService._(this.isar);
+  static const String _dbName = 'smart_expense_tracker';
+  late final Isar isar;
 
   // Singleton instance
   static IsarService? _instance;

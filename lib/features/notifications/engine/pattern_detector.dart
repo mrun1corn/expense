@@ -1,9 +1,9 @@
+import 'package:expense/core/db/isar_service.dart';
+import 'package:expense/features/expenses/data/local/isar/expense_isar.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
+import 'package:expense/features/notifications/data/local/isar/spending_pattern_isar.dart';
+import 'package:expense/features/notifications/domain/models/spending_pattern.dart';
 import 'package:isar/isar.dart';
-import '../../../core/db/isar_service.dart';
-import '../../expenses/domain/models/expense.dart';
-import '../../expenses/data/local/isar/expense_isar.dart';
-import '../data/local/isar/spending_pattern_isar.dart';
-import '../domain/models/spending_pattern.dart';
 
 enum TimeSlot {
   morning,
@@ -43,7 +43,7 @@ class PatternDetector {
         .dateGreaterThan(sixtyDaysAgo)
         .findAll();
 
-    final expenses = expensesIsar.map((e) => e.toDomain()).toList();
+    final expenses = expensesIsar.map<Expense>((e) => e.toDomain()).toList();
 
     final patterns = await detectAll(expenses);
 
@@ -77,7 +77,7 @@ class PatternDetector {
     final patterns = <SpendingPattern>[];
     
     // Group by category and time slot
-    final Map<ExpenseCategory, Map<TimeSlot, List<Expense>>> buckets = {};
+    final buckets = <ExpenseCategory, Map<TimeSlot, List<Expense>>>{};
 
     for (final exp in last60Days) {
       final slot = getTimeSlot(exp.date);
@@ -86,7 +86,7 @@ class PatternDetector {
       buckets[exp.category]![slot]!.add(exp);
     }
 
-    const double tolerance = 0.15; // ±15% variance
+    const tolerance = 0.15; // ±15% variance
     
     // Process buckets for daily habits
     buckets.forEach((category, slotMap) {
@@ -95,7 +95,7 @@ class PatternDetector {
         expenses.sort((a, b) => a.date.compareTo(b.date));
 
         // Group expenses by calendar day
-        final Map<String, List<Expense>> expensesByDay = {};
+        final expensesByDay = <String, List<Expense>>{};
         for (final exp in expenses) {
           final dateKey = '${exp.date.year}-${exp.date.month.toString().padLeft(2, '0')}-${exp.date.day.toString().padLeft(2, '0')}';
           expensesByDay.putIfAbsent(dateKey, () => []);
@@ -112,13 +112,13 @@ class PatternDetector {
         // Find longest consecutive-day streak within variance
         final sortedDays = expensesByDay.keys.toList()..sort();
         
-        int currentStreak = 0;
-        int maxStreak = 0;
+        var currentStreak = 0;
+        var maxStreak = 0;
         DateTime? firstSeen;
         DateTime? lastSeen;
         DateTime? currentStreakStart;
 
-        for (int i = 0; i < sortedDays.length; i++) {
+        for (var i = 0; i < sortedDays.length; i++) {
           final dayKey = sortedDays[i];
           final dayExpenses = expensesByDay[dayKey]!;
           

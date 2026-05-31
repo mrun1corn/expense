@@ -1,10 +1,9 @@
 import 'dart:developer' as developer;
-import 'package:awesome_notifications/awesome_notifications.dart';
-import 'package:isar/isar.dart';
 
-import '../../../../core/db/isar_service.dart';
-import '../../../expenses/data/local/isar/expense_isar.dart';
-import '../../../expenses/domain/models/expense.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:expense/core/db/isar_service.dart';
+import 'package:expense/features/expenses/data/local/isar/expense_isar.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
 
 class ActionHandlers {
   /// Global `@pragma('vm:entry-point')` action handler for awesome_notifications.
@@ -75,6 +74,6 @@ class ActionHandlers {
       await isar.expenseIsars.put(expense);
     });
 
-    developer.log('QUICK_ADD successful. Added expense for \$amount');
+    developer.log(r'QUICK_ADD successful. Added expense for $amount');
   }
 }

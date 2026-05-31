@@ -1,11 +1,11 @@
+import 'package:expense/features/expenses/data/local/isar/expense_isar.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:isar/isar.dart';
-import '../../domain/models/expense.dart';
-import 'isar/expense_isar.dart';
 
 class ExpenseLocalDatasource {
-  final Isar _isar;
 
   ExpenseLocalDatasource(this._isar);
+  final Isar _isar;
 
   // Watches all expenses sorted by date descending in real-time
   Stream<List<Expense>> watchAll() {
@@ -13,7 +13,7 @@ class ExpenseLocalDatasource {
         .where()
         .sortByDateDesc()
         .watch(fireImmediately: true)
-        .map((list) => list.map((e) => e.toDomain()).toList());
+        .map((list) => list.map<Expense>((e) => e.toDomain()).toList());
   }
 
   // Adds a new expense to Isar database
@@ -53,18 +53,17 @@ class ExpenseLocalDatasource {
 
   // Fetches expenses within a specific calendar month and year
   Future<List<Expense>> getByMonth(int month, int year) async {
-    final start = DateTime(year, month, 1);
+    final start = DateTime(year, month);
     final end = DateTime(
       year,
       month + 1,
-      1,
     ).subtract(const Duration(milliseconds: 1));
     final results = await _isar.expenseIsars
         .filter()
         .dateBetween(start, end)
         .sortByDateDesc()
         .findAll();
-    return results.map((e) => e.toDomain()).toList();
+    return results.map<Expense>((e) => e.toDomain()).toList();
   }
 
   // Fetches last 60 days of expenses, sorted by date descending (for PatternDetector)
@@ -75,7 +74,7 @@ class ExpenseLocalDatasource {
         .dateGreaterThan(cutoff)
         .sortByDateDesc()
         .findAll();
-    return results.map((e) => e.toDomain()).toList();
+    return results.map<Expense>((e) => e.toDomain()).toList();
   }
 
   // Fetches all unsynced expenses
@@ -84,7 +83,7 @@ class ExpenseLocalDatasource {
         .filter()
         .isSyncedEqualTo(false)
         .findAll();
-    return results.map((e) => e.toDomain()).toList();
+    return results.map<Expense>((e) => e.toDomain()).toList();
   }
 
   // Fetches the most recently updated expense
@@ -123,7 +122,7 @@ class ExpenseLocalDatasource {
         .dateBetween(from, to)
         .findAll();
 
-    final Map<ExpenseCategory, double> totals = {};
+    final totals = <ExpenseCategory, double>{};
     for (final exp in results) {
       final domainExp = exp.toDomain();
       totals[domainExp.category] =

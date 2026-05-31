@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../domain/models/expense.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
 
 class ExpenseRemoteDatasource {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

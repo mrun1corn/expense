@@ -11,7 +11,7 @@ class _NotificationSettingsScreenState extends State<NotificationSettingsScreen>
   bool _notificationsEnabled = true;
   TimeOfDay _quietStart = const TimeOfDay(hour: 23, minute: 0); // 11 PM
   TimeOfDay _quietEnd = const TimeOfDay(hour: 7, minute: 0);   // 7 AM
-  double _dailyCap = 5.0;
+  double _dailyCap = 5;
 
   @override
   Widget build(BuildContext context) {

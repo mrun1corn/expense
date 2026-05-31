@@ -1,5 +1,5 @@
-import '../../features/notifications/engine/action_handlers.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:expense/features/notifications/engine/action_handlers.dart';
 import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -105,7 +105,7 @@ class NotificationManager {
   }
 
   static Future<bool> requestPermission() async {
-    bool isAllowed = await AwesomeNotifications().isNotificationAllowed();
+    var isAllowed = await AwesomeNotifications().isNotificationAllowed();
     if (!isAllowed) {
       isAllowed = await AwesomeNotifications().requestPermissionToSendNotifications();
     }

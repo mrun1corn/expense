@@ -1,5 +1,5 @@
+import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import '../../../expenses/domain/models/expense.dart';
 
 part 'budget.freezed.dart';
 part 'budget.g.dart';
@@ -14,8 +14,7 @@ class Budget with _$Budget {
     required String currency,
     required int month,
     required int year,
-    @Default(0.0) double spentAmount,
-    required DateTime createdAt,
+    required DateTime createdAt, @Default(0.0) double spentAmount,
   }) = _Budget;
 
   factory Budget.fromJson(Map<String, dynamic> json) => _$BudgetFromJson(json);
