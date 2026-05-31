@@ -2,6 +2,9 @@ import 'dart:convert';
 
 import 'package:expense/features/ai_insights/presentation/providers/gemini_provider.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
+import 'package:expense/features/auth/presentation/auth_provider.dart';
+import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
+import 'package:expense/features/ai_insights/presentation/screens/ai_auth_fallback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -37,6 +40,23 @@ class AiInsightsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final hasApiKey = ref.watch(apiKeyProvider).isNotEmpty;
+
+    if (!isAuthenticated && !hasApiKey) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('AI Insights'),
+        ),
+        body: const SafeArea(
+          child: AiAuthFallback(
+            title: 'Unlock AI Insights',
+            subtitle: 'Get automatically generated monthly spending summaries, categorization alerts, and budget advice powered by Gemini.',
+          ),
+        ),
+      );
+    }
+
     final summaryAsync = ref.watch(monthlySummaryProvider);
 
     return Scaffold(
@@ -74,12 +94,11 @@ class AiInsightsScreen extends ConsumerWidget {
                         Text('Gemini is analyzing your spending...'),
                       ],
                     ),
-                    error: (err, _) => const Text(r'Error: $err'),
+                    error: (err, _) => Text('Error: $err'),
                   ),
                 ),
               ),
               const SizedBox(height: 24),
-              // We could add more cards here for Budget Advice, Saving Tips, etc.
               ElevatedButton.icon(
                 icon: const Icon(Icons.chat),
                 label: const Text('Chat with SmartSpend AI'),

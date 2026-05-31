@@ -27,6 +27,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _noteController = TextEditingController();
+  final _amountController = TextEditingController();
 
   Timer? _debounceTimer;
   bool _isPredictingCategory = false;
@@ -44,6 +45,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     if (_isEditMode) {
       final exp = widget.existingExpense!;
       _amountString = exp.amount.toStringAsFixed(exp.amount % 1 == 0 ? 0 : 2);
+      _amountController.text = _amountString;
       _titleController.text = exp.title;
       _noteController.text = exp.note ?? '';
       _selectedCategory = exp.category;
@@ -57,6 +59,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     _debounceTimer?.cancel();
     _titleController.dispose();
     _noteController.dispose();
+    _amountController.dispose();
     super.dispose();
   }
 
@@ -103,40 +106,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     });
   }
 
-  void _onKeypadTap(String value) {
-    HapticFeedback.lightImpact();
-    setState(() {
-      if (value == '⌫') {
-        if (_amountString.length > 1) {
-          _amountString = _amountString.substring(0, _amountString.length - 1);
-        } else {
-          _amountString = '0';
-        }
-      } else if (value == '.') {
-        if (!_amountString.contains('.')) {
-          _amountString += '.';
-        }
-      } else {
-        if (_amountString == '0') {
-          _amountString = value;
-        } else {
-          if (_amountString.contains('.')) {
-            final decimals = _amountString.split('.')[1];
-            if (decimals.length < 2) {
-              _amountString += value;
-            }
-          } else {
-            _amountString += value;
-          }
-        }
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final amount = double.tryParse(_amountString) ?? 0.0;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditMode ? 'Edit Spend' : 'Add Spend'),
@@ -151,224 +122,205 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: Column(
-          children: [
-            Expanded(
-              child: Container(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Card(
+                elevation: 0,
                 color: Theme.of(context).colorScheme.surfaceContainerLow,
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'AMOUNT',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                        color: Theme.of(context).colorScheme.primary,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  child: Column(
+                    children: [
+                      Text(
+                        'AMOUNT',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: Text(
-                        r'💵$amount',
-                        style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: Theme.of(context).colorScheme.onSurface,
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '💵',
+                            style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          const SizedBox(width: 8),
+                          IntrinsicWidth(
+                            child: TextFormField(
+                              controller: _amountController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                              ],
+                              style: Theme.of(context).textTheme.displayLarge?.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    color: Theme.of(context).colorScheme.onSurface,
+                                  ),
+                              textAlign: TextAlign.center,
+                              decoration: InputDecoration(
+                                hintText: '0.00',
+                                border: InputBorder.none,
+                                hintStyle: TextStyle(color: Colors.grey.shade400),
+                              ),
+                              validator: (value) {
+                                if (value == null || value.trim().isEmpty) return 'Enter amount';
+                                final parsed = double.tryParse(value);
+                                if (parsed == null || parsed <= 0) return 'Invalid';
+                                return null;
+                              },
+                              onChanged: (val) {
+                                setState(() {
+                                  _amountString = val.trim().isEmpty ? '0' : val.trim();
+                                });
+                              },
                             ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, -5),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _titleController,
+                onChanged: _onTitleChanged,
+                decoration: InputDecoration(
+                  labelText: 'What did you buy? *',
+                  prefixIcon: const Icon(Icons.description),
+                  suffixIcon: _isPredictingCategory 
+                      ? const Padding(
+                          padding: EdgeInsets.all(12),
+                          child: SizedBox(
+                            width: 16, height: 16, 
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ) 
+                      : null,
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
                   ),
-                ],
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) return 'Please enter a title';
+                  return null;
+                },
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              const SizedBox(height: 16),
+              TextFormField(
+                controller: _noteController,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Add Note / Description',
+                  prefixIcon: Icon(Icons.note_alt_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Row(
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
-                    child: Column(
-                      children: [
-                        TextFormField(
-                          controller: _titleController,
-                          onChanged: _onTitleChanged,
-                          decoration: InputDecoration(
-                            labelText: 'What did you buy? *',
-                            prefixIcon: const Icon(Icons.description),
-                            suffixIcon: _isPredictingCategory 
-                                ? const Padding(
-                                    padding: EdgeInsets.all(12),
-                                    child: SizedBox(
-                                      width: 16, height: 16, 
-                                      child: CircularProgressIndicator(strokeWidth: 2),
-                                    ),
-                                  ) 
-                                : null,
-                            border: const OutlineInputBorder(
-                              borderRadius: BorderRadius.all(Radius.circular(12)),
-                            ),
-                          ),
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) return 'Please enter a title';
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.calendar_month),
-                                label: Text(DateFormat('MMM d, yyyy').format(_selectedDateTime)),
-                                onPressed: () => _pickDate(context),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                icon: const Icon(Icons.access_time),
-                                label: Text(DateFormat('h:mm a').format(_selectedDateTime)),
-                                onPressed: () => _pickTime(context),
-                                style: OutlinedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.calendar_month),
+                      label: Text(DateFormat('MMM d, yyyy').format(_selectedDateTime)),
+                      onPressed: () => _pickDate(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
                     ),
                   ),
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    child: Row(
-                      children: ExpenseCategory.values.map((category) {
-                        final isSelected = _selectedCategory == category;
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            avatar: Icon(_getCategoryIcon(category), size: 16, color: isSelected ? Colors.white : null),
-                            label: Text(_formatEnumName(category.name)),
-                            selected: isSelected,
-                            selectedColor: Theme.of(context).colorScheme.primary,
-                            labelStyle: TextStyle(color: isSelected ? Colors.white : null),
-                            onSelected: (selected) {
-                              if (selected) {
-                                HapticFeedback.selectionClick();
-                                setState(() { _selectedCategory = category; });
-                              }
-                            },
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                  Container(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow.withOpacity(0.5),
-                    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-                    child: Column(
-                      children: [
-                        _buildKeypadRow(['1', '2', '3']),
-                        const SizedBox(height: 12),
-                        _buildKeypadRow(['4', '5', '6']),
-                        const SizedBox(height: 12),
-                        _buildKeypadRow(['7', '8', '9']),
-                        const SizedBox(height: 12),
-                        _buildKeypadRow(['.', '0', '⌫']),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton.icon(
-                        icon: Icon(_isEditMode ? Icons.check : Icons.save),
-                        label: Text(
-                          _isEditMode ? 'Update Spend' : 'Save Spend',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Theme.of(context).colorScheme.primary,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
-                        onPressed: amount > 0 ? _saveExpense : null,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.access_time),
+                      label: Text(DateFormat('h:mm a').format(_selectedDateTime)),
+                      onPressed: () => _pickTime(context),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ),
                   ),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              Text(
+                'Category',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  children: ExpenseCategory.values.map((category) {
+                    final isSelected = _selectedCategory == category;
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        avatar: Icon(_getCategoryIcon(category), size: 16, color: isSelected ? Colors.white : null),
+                        label: Text(_formatEnumName(category.name)),
+                        selected: isSelected,
+                        selectedColor: Theme.of(context).colorScheme.primary,
+                        labelStyle: TextStyle(color: isSelected ? Colors.white : null),
+                        onSelected: (selected) {
+                          if (selected) {
+                            HapticFeedback.selectionClick();
+                            setState(() { _selectedCategory = category; });
+                          }
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+              const SizedBox(height: 32),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton.icon(
+                  icon: Icon(_isEditMode ? Icons.check : Icons.save),
+                  label: Text(
+                    _isEditMode ? 'Update Spend' : 'Save Spend',
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  onPressed: _saveExpense,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-    );
-  }
-
-  Widget _buildKeypadRow(List<String> keys) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: keys.map((key) {
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => _onKeypadTap(key),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.3)),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    key,
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                      color: key == '⌫' ? Colors.red : Theme.of(context).colorScheme.onSurface,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
-      }).toList(),
     );
   }
 
   Future<void> _saveExpense() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final amount = double.tryParse(_amountString) ?? 0.0;
+    final amount = double.tryParse(_amountController.text.trim()) ?? 0.0;
     if (amount <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter an amount greater than 0')));
       return;

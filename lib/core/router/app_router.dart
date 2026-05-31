@@ -3,6 +3,7 @@ import 'package:expense/features/ai_insights/presentation/screens/ai_insights_sc
 import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:expense/features/auth/presentation/login_screen.dart';
 import 'package:expense/features/auth/presentation/profile_screen.dart';
+import 'package:expense/features/budgets/presentation/screens/budget_screen.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/screens/add_expense_screen.dart';
 import 'package:expense/features/home/presentation/screens/main_shell_screen.dart';
@@ -97,16 +98,24 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const NotificationSettingsScreen(),
         ),
       ),
+      GoRoute(
+        path: '/budgets',
+        pageBuilder: (context, state) => _buildPageWithSlideTransition(
+          context: context,
+          state: state,
+          child: const BudgetScreen(),
+        ),
+      ),
     ],
   );
 });
 
-CustomTransitionPage _buildPageWithFadeTransition<T>({
+CustomTransitionPage<void> _buildPageWithFadeTransition({
   required BuildContext context,
   required GoRouterState state,
   required Widget child,
 }) {
-  return CustomTransitionPage<T>(
+  return CustomTransitionPage<void>(
     key: state.pageKey,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -118,12 +127,12 @@ CustomTransitionPage _buildPageWithFadeTransition<T>({
   );
 }
 
-CustomTransitionPage _buildPageWithSlideTransition<T>({
+CustomTransitionPage<void> _buildPageWithSlideTransition({
   required BuildContext context,
   required GoRouterState state,
   required Widget child,
 }) {
-  return CustomTransitionPage<T>(
+  return CustomTransitionPage<void>(
     key: state.pageKey,
     child: child,
     transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -137,4 +146,4 @@ CustomTransitionPage _buildPageWithSlideTransition<T>({
       );
     },
   );
-}
+}

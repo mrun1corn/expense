@@ -1,5 +1,8 @@
 import 'package:expense/features/ai_insights/domain/models/chat_message.dart';
 import 'package:expense/features/ai_insights/presentation/providers/gemini_provider.dart';
+import 'package:expense/features/auth/presentation/auth_provider.dart';
+import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
+import 'package:expense/features/ai_insights/presentation/screens/ai_auth_fallback.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
@@ -67,7 +70,7 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text(r'Failed to send message: $e')),
+          SnackBar(content: Text('Failed to send message: $e')),
         );
       }
     } finally {
@@ -81,6 +84,23 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAuthenticated = ref.watch(isAuthenticatedProvider);
+    final hasApiKey = ref.watch(apiKeyProvider).isNotEmpty;
+
+    if (!isAuthenticated && !hasApiKey) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('SmartSpend AI'),
+        ),
+        body: const SafeArea(
+          child: AiAuthFallback(
+            title: 'Unlock SmartSpend AI',
+            subtitle: 'Chat directly with your automated AI financial advisor about budgets, savings advice, and dynamic transaction history.',
+          ),
+        ),
+      );
+    }
+
     final messages = ref.watch(chatMessagesProvider);
 
     return Scaffold(

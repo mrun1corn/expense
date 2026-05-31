@@ -1,6 +1,7 @@
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:expense/features/expenses/presentation/providers/sync_provider.dart';
+import 'package:expense/features/budgets/presentation/providers/budget_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -26,6 +27,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
     final expensesAsync = ref.watch(expensesStreamProvider);
     final totalSpentAsync = ref.watch(totalThisMonthProvider);
+    final budgetsAsync = ref.watch(budgetsStreamProvider(_selectedMonth));
 
     return Scaffold(
       body: SafeArea(
@@ -190,42 +192,148 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        // Budget progress bar (Mocked for Guest mode until Budget Screen is fully set up)
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Budget Progress',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimaryContainer
-                                        .withOpacity(0.7),
+                        budgetsAsync.when(
+                          data: (budgets) {
+                            if (budgets.isEmpty) {
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'No budgets configured',
+                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                              color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                                            ),
+                                      ),
+                                      TextButton.icon(
+                                        style: TextButton.styleFrom(
+                                          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                                          padding: EdgeInsets.zero,
+                                          minimumSize: Size.zero,
+                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                        icon: const Icon(Icons.add, size: 14),
+                                        label: const Text('Set Limits', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                        onPressed: () => context.push('/budgets'),
+                                      ),
+                                    ],
                                   ),
-                            ),
-                            Text(
-                              '70% of 💵10,000',
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer,
+                                  const SizedBox(height: 6),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: LinearProgressIndicator(
+                                      value: 0.0,
+                                      backgroundColor: Colors.white.withValues(alpha: 0.25),
+                                    ),
                                   ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: const LinearProgressIndicator(
-                            value: 0.70,
-                            backgroundColor: Colors.white24,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.green,
-                            ),
-                          ),
+                                ],
+                              );
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Budget Progress',
+                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                            color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
+                                          ),
+                                    ),
+                                    expensesAsync.when(
+                                      data: (expenses) {
+                                        final monthlyExpenses = expenses.where((e) =>
+                                            e.date.month == _selectedMonth.month &&
+                                            e.date.year == _selectedMonth.year).toList();
+
+                                        final spentByCategory = <ExpenseCategory, double>{};
+                                        for (final exp in monthlyExpenses) {
+                                          spentByCategory[exp.category] = (spentByCategory[exp.category] ?? 0.0) + exp.amount;
+                                        }
+
+                                        double totalBudgetLimit = 0.0;
+                                        double totalBudgetSpent = 0.0;
+
+                                        for (final b in budgets) {
+                                          totalBudgetLimit += b.limitAmount;
+                                          totalBudgetSpent += spentByCategory[b.category] ?? 0.0;
+                                        }
+
+                                        final percent = totalBudgetLimit > 0 ? (totalBudgetSpent / totalBudgetLimit).clamp(0.0, 1.0) : 0.0;
+
+                                        return Text(
+                                          '${(percent * 100).toStringAsFixed(0)}% of 💵${totalBudgetLimit.toStringAsFixed(0)}',
+                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: Theme.of(context).colorScheme.onPrimaryContainer,
+                                              ),
+                                        );
+                                      },
+                                      loading: () => const Text('Loading...'),
+                                      error: (_, __) => const Text('💵0'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                expensesAsync.when(
+                                  data: (expenses) {
+                                    final monthlyExpenses = expenses.where((e) =>
+                                        e.date.month == _selectedMonth.month &&
+                                        e.date.year == _selectedMonth.year).toList();
+
+                                    final spentByCategory = <ExpenseCategory, double>{};
+                                    for (final exp in monthlyExpenses) {
+                                      spentByCategory[exp.category] = (spentByCategory[exp.category] ?? 0.0) + exp.amount;
+                                    }
+
+                                    double totalBudgetLimit = 0.0;
+                                    double totalBudgetSpent = 0.0;
+
+                                    for (final b in budgets) {
+                                      totalBudgetLimit += b.limitAmount;
+                                      totalBudgetSpent += spentByCategory[b.category] ?? 0.0;
+                                    }
+
+                                    final percent = totalBudgetLimit > 0 ? (totalBudgetSpent / totalBudgetLimit).clamp(0.0, 1.0) : 0.0;
+
+                                    return ClipRRect(
+                                      borderRadius: BorderRadius.circular(4),
+                                      child: LinearProgressIndicator(
+                                        value: percent,
+                                        backgroundColor: Colors.white24,
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          percent > 0.9 ? Colors.redAccent : (percent > 0.75 ? Colors.orange : Colors.green),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  loading: () => const LinearProgressIndicator(value: 0.0),
+                                  error: (_, __) => const LinearProgressIndicator(value: 0.0),
+                                ),
+                                const SizedBox(height: 4),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                                      padding: EdgeInsets.zero,
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    icon: const Icon(Icons.edit, size: 12),
+                                    label: const Text('Manage Budgets', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                    onPressed: () => context.push('/budgets'),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                          loading: () => const SizedBox(height: 30),
+                          error: (_, __) => const SizedBox(height: 30),
                         ),
                       ],
                     ),
