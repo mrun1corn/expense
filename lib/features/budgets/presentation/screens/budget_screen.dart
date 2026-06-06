@@ -1,3 +1,5 @@
+import 'package:expense/core/theme/app_theme.dart';
+import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:expense/features/budgets/domain/models/budget.dart';
 import 'package:expense/features/budgets/presentation/providers/budget_provider.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
@@ -5,6 +7,7 @@ import 'package:expense/features/expenses/presentation/providers/expense_provide
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
@@ -18,7 +21,7 @@ class BudgetScreen extends ConsumerStatefulWidget {
 class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   DateTime _selectedMonth = DateTime.now();
 
-  void _showMonthPicker(BuildContext context) async {
+  Future<void> _showMonthPicker(BuildContext context) async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
@@ -50,188 +53,180 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
   Widget build(BuildContext context) {
     final budgetsAsync = ref.watch(budgetsStreamProvider(_selectedMonth));
     final expensesAsync = ref.watch(expensesStreamProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Manage Budgets'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.calendar_month),
-            onPressed: () => _showMonthPicker(context),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAddBudgetSheet(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Set Budget Limit'),
-      ),
-      body: expensesAsync.when(
-        data: (expenses) => budgetsAsync.when(
-          data: (budgets) {
-            // Filter expenses for selected month & year
-            final monthlyExpenses = expenses.where((e) =>
-                e.date.month == _selectedMonth.month &&
-                e.date.year == _selectedMonth.year).toList();
+      backgroundColor: AppColors.getBgBase(context),
+      body: SafeArea(
+        child: expensesAsync.when(
+          data: (expenses) => budgetsAsync.when(
+            data: (budgets) {
+              final monthlyExpenses = expenses.where((e) =>
+                  e.date.month == _selectedMonth.month &&
+                  e.date.year == _selectedMonth.year &&
+                  e.type == TransactionType.expense &&
+                  !e.isDeleted).toList();
 
-            // Calculate spent amounts per category dynamically
-            final spentByCategory = <ExpenseCategory, double>{};
-            for (final exp in monthlyExpenses) {
-              spentByCategory[exp.category] = (spentByCategory[exp.category] ?? 0.0) + exp.amount;
-            }
+              final spentByCategory = <ExpenseCategory, double>{};
+              for (final exp in monthlyExpenses) {
+                spentByCategory[exp.category] = (spentByCategory[exp.category] ?? 0.0) + exp.amount;
+              }
 
-            // Total budget limits & total spent within budget categories
-            double totalBudget = 0.0;
-            double totalSpent = 0.0;
+              var totalBudget = 0.0;
+              var totalSpent = 0.0;
 
-            final budgetItemsList = budgets.map((b) {
-              final spent = spentByCategory[b.category] ?? 0.0;
-              totalBudget += b.limitAmount;
-              totalSpent += spent;
+              final budgetItemsList = budgets.map((b) {
+                final spent = spentByCategory[b.category] ?? 0.0;
+                totalBudget += b.limitAmount;
+                totalSpent += spent;
 
-              return _BudgetItem(
-                budget: b,
-                spentAmount: spent,
-                onEdit: () => _openAddBudgetSheet(context, b),
-                onDelete: () async {
-                  await ref.read(budgetRepositoryProvider).deleteBudget(b.id);
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Budget limit deleted')),
-                    );
-                  }
-                },
-              );
-            }).toList();
+                return _BudgetItem(
+                  budget: b,
+                  spentAmount: spent,
+                  onEdit: () => _openAddBudgetSheet(context, b),
+                  onDelete: () async {
+                    await ref.read(budgetRepositoryProvider).deleteBudget(b.id);
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Budget limit deleted')),
+                      );
+                    }
+                  },
+                );
+              }).toList();
 
-            final totalPercent = totalBudget > 0 ? (totalSpent / totalBudget).clamp(0.0, 1.0) : 0.0;
+              final totalPercent = totalBudget > 0 ? (totalSpent / totalBudget).clamp(0.0, 1.0) : 0.0;
+              final remaining = (totalBudget - totalSpent).clamp(0.0, double.infinity);
 
-            return CustomScrollView(
-              slivers: [
-                // Month header
-                SliverToBoxAdapter(
+              return CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: ScreenHeader(
+                      title: 'Budget Manager',
+                      subtitle: 'AI-suggested limits per category',
+                      showBackButton: true,
+                      action: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.add),
+                            onPressed: () => _openAddBudgetSheet(context),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.calendar_month_outlined),
+                            onPressed: () => _showMonthPicker(context),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // Month Overview Card (hero/dark)
+                  SliverToBoxAdapter(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          DateFormat('MMMM yyyy').format(_selectedMonth),
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                fontWeight: FontWeight.bold,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.getHeroBg(context),
+                        borderRadius: BorderRadius.circular(16),
+                        border: isDark ? Border.all(color: const Color(0x1FFFFFFF)) : null,
+                        boxShadow: AppShadows.getShadow1(context),
+                      ),
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            DateFormat('MMMM yyyy').format(_selectedMonth).toUpperCase(),
+                            style: AppTextStyles.overline(
+                              color: AppColors.getHeroFgMuted(context),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '\$${totalBudget.toStringAsFixed(0)}',
+                            style: AppTextStyles.monospace(
+                              32,
+                              color: AppColors.getHeroFg(context),
+                              weight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Spent: \$${totalSpent.toStringAsFixed(0)} · Remaining: \$${remaining.toStringAsFixed(0)}',
+                            style: AppTextStyles.bodySm(
+                              color: AppColors.getHeroFgMuted(context),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(3),
+                            child: SizedBox(
+                              height: 6,
+                              child: LinearProgressIndicator(
+                                value: totalPercent,
+                                backgroundColor: const Color(0xFF2A2A2A),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  totalPercent > 0.9
+                                      ? AppColors.dangerLight
+                                      : (totalPercent > 0.75
+                                          ? AppColors.warningLight
+                                          : (isDark ? AppColors.fgPrimaryDark : AppColors.heroFgLight)),
+                                ),
                               ),
-                        ),
-                        Text(
-                          '${budgets.length} budget limits configured',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: Colors.grey,
-                              ),
-                        ),
-                      ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
 
-                // Total Summary Card
-                if (budgets.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(24),
-                            gradient: LinearGradient(
-                              colors: [
-                                Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.4),
-                                Theme.of(context).colorScheme.surface,
-                              ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                          ),
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'All Budgets Progress',
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey),
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    '💵${totalSpent.toStringAsFixed(2)} spent',
-                                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
-                                  ),
-                                  Text(
-                                    'of 💵${totalBudget.toStringAsFixed(2)} limit',
-                                    style: const TextStyle(fontSize: 14, color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: LinearProgressIndicator(
-                                  value: totalPercent,
-                                  minHeight: 10,
-                                  backgroundColor: Colors.grey.withValues(alpha: 0.2),
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    totalPercent > 0.9 ? Colors.red : (totalPercent > 0.75 ? Colors.orange : Colors.green),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '${(totalPercent * 100).toStringAsFixed(0)}% consumed',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: totalPercent > 0.9 ? Colors.red : (totalPercent > 0.75 ? Colors.orange : Colors.green),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
+                // Category Budgets list
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                    child: Text(
+                      'CATEGORY BUDGETS',
+                      style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                     ),
                   ),
+                ),
 
                 if (budgets.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
                     child: Center(
                       child: Padding(
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.all(24),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Icon(
                               Icons.pie_chart_outline_rounded,
                               size: 72,
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
+                              color: AppColors.getFgTertiary(context),
                             ),
                             const SizedBox(height: 16),
-                            const Text(
+                            Text(
                               'No Budgets Set Yet',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              style: AppTextStyles.headingLg(color: AppColors.getFgPrimary(context)),
                             ),
                             const SizedBox(height: 8),
-                            const Text(
+                            Text(
                               'Setting category spending limits keeps your expenses optimized and triggers custom warning notifications before you overspend.',
                               textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.grey, height: 1.3),
+                              style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)).copyWith(height: 1.4),
                             ),
                             const SizedBox(height: 24),
                             ElevatedButton.icon(
                               onPressed: () => _openAddBudgetSheet(context),
-                              icon: const Icon(Icons.add),
+                              icon: const Icon(Icons.add, size: 16),
                               label: const Text('Set up your first limit'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.getBrandPrimary(context),
+                                foregroundColor: isDark ? AppColors.fgPrimaryLight : AppColors.heroFgLight,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
                             ),
                           ],
                         ),
@@ -240,11 +235,81 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   )
                 else
                   SliverPadding(
-                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     sliver: SliverList(
                       delegate: SliverChildBuilderDelegate(
                         (context, index) => budgetItemsList[index],
                         childCount: budgetItemsList.length,
+                      ),
+                    ),
+                  ),
+
+                // AI Recommendation block
+                if (budgets.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.getBgSunken(context),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.auto_awesome,
+                              color: AppColors.getInfo(context),
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'AI Recommendation',
+                                    style: AppTextStyles.captionBold(color: AppColors.getInfo(context)),
+                                  ),
+                                  const SizedBox(height: 4),
+                                    Text(
+                                      r'Your spending on Utilities is currently under budget. AI suggests you could reallocate $100 of unused limit to Transport based on your 30-day pattern.',
+                                      style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)).copyWith(height: 1.4),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // Adjust Budgets with AI button
+                if (budgets.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 0, 20, 96),
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          icon: const Icon(Icons.auto_awesome, size: 16),
+                          label: const Text(
+                            'Adjust Budgets with AI',
+                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.getBrandPrimary(context),
+                            foregroundColor: isDark ? AppColors.fgPrimaryLight : AppColors.heroFgLight,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 1,
+                          ),
+                          onPressed: () {
+                            context.push('/chat');
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -257,22 +322,22 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Error loading expenses: $e')),
       ),
-    );
-  }
+    ),
+  );
+}
 }
 
 class _BudgetItem extends StatelessWidget {
-  final Budget budget;
-  final double spentAmount;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
   const _BudgetItem({
     required this.budget,
     required this.spentAmount,
     required this.onEdit,
     required this.onDelete,
   });
+  final Budget budget;
+  final double spentAmount;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
 
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
@@ -283,7 +348,34 @@ class _BudgetItem extends StatelessWidget {
       case ExpenseCategory.shopping: return Icons.shopping_bag;
       case ExpenseCategory.health: return Icons.medical_services;
       case ExpenseCategory.education: return Icons.school;
+      case ExpenseCategory.salary: return Icons.work;
+      case ExpenseCategory.business: return Icons.storefront;
+      case ExpenseCategory.investment: return Icons.trending_up;
+      case ExpenseCategory.gift: return Icons.card_giftcard;
+      case ExpenseCategory.friend: return Icons.people;
+      case ExpenseCategory.bank: return Icons.account_balance;
+      case ExpenseCategory.family: return Icons.house;
       case ExpenseCategory.other: return Icons.more_horiz;
+    }
+  }
+
+  Color _getCategoryColor(ExpenseCategory category) {
+    switch (category) {
+      case ExpenseCategory.food: return Colors.orange;
+      case ExpenseCategory.transport: return Colors.blue;
+      case ExpenseCategory.shopping: return Colors.purple;
+      case ExpenseCategory.utilities: return Colors.amber;
+      case ExpenseCategory.health: return Colors.red;
+      case ExpenseCategory.entertainment: return Colors.green;
+      case ExpenseCategory.education: return Colors.indigo;
+      case ExpenseCategory.salary: return Colors.teal;
+      case ExpenseCategory.business: return Colors.cyan;
+      case ExpenseCategory.investment: return Colors.lightGreen;
+      case ExpenseCategory.gift: return Colors.deepPurple;
+      case ExpenseCategory.friend: return Colors.brown;
+      case ExpenseCategory.bank: return Colors.blueGrey;
+      case ExpenseCategory.family: return Colors.pink;
+      case ExpenseCategory.other: return Colors.grey;
     }
   }
 
@@ -297,101 +389,135 @@ class _BudgetItem extends StatelessWidget {
     final limit = budget.limitAmount;
     final percent = limit > 0 ? (spentAmount / limit).clamp(0.0, 1.0) : 0.0;
     final isOver = spentAmount > limit;
+    final catColor = _getCategoryColor(budget.category);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Card(
+    // AI suggestions flag (demo auto suggestion tag)
+    final isAiSuggested = budget.category == ExpenseCategory.food || budget.category == ExpenseCategory.transport;
+
+    return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.3),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    _getCategoryIcon(budget.category),
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+      decoration: AppShadows.getCardDecoration(context),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.getBgSunken(context),
+                radius: 18,
+                child: Icon(
+                  _getCategoryIcon(budget.category),
+                  color: catColor,
+                  size: 18,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _formatEnumName(budget.category.name),
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '💵${spentAmount.toStringAsFixed(2)} of 💵${limit.toStringAsFixed(2)}',
-                        style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                      ),
-                    ],
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          _formatEnumName(budget.category.name),
+                          style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
+                        ),
+                        if (isAiSuggested) ...[
+                          const SizedBox(width: 8),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.getInfoBg(context),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            child: Row(
+                              children: [
+                                Icon(Icons.auto_awesome, size: 8, color: AppColors.getInfo(context)),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'AI Suggested',
+                                  style: AppTextStyles.captionBold(color: AppColors.getInfo(context)).copyWith(fontSize: 9),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '\$${spentAmount.toStringAsFixed(0)} of \$${limit.toStringAsFixed(0)} limit',
+                      style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: const Icon(Icons.edit, size: 20),
-                  onPressed: onEdit,
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
-                  onPressed: onDelete,
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: onEdit,
+              ),
+              IconButton(
+                icon: Icon(Icons.delete_outline, size: 20, color: AppColors.getDanger(context)),
+                onPressed: onDelete,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: SizedBox(
+              height: 6,
               child: LinearProgressIndicator(
                 value: percent,
-                minHeight: 6,
-                backgroundColor: Colors.grey.withValues(alpha: 0.1),
+                backgroundColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E5E5),
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  isOver ? Colors.red : (percent > 0.8 ? Colors.orange : Colors.green),
+                  isOver
+                      ? AppColors.getDanger(context)
+                      : (percent > 0.75 ? AppColors.getWarning(context) : AppColors.getBrandPrimary(context)),
                 ),
               ),
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '${(percent * 100).toStringAsFixed(0)}% used',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.bold,
-                    color: isOver ? Colors.red : (percent > 0.8 ? Colors.orange : Colors.green),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '${(percent * 100).toStringAsFixed(0)}% used',
+                style: AppTextStyles.captionBold(
+                  color: isOver
+                      ? AppColors.getDanger(context)
+                      : (percent > 0.75 ? AppColors.getWarning(context) : AppColors.getSuccess(context)),
+                ),
+              ),
+              if (isOver)
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.getDangerBg(context),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  child: Text(
+                    'Over Budget',
+                    style: AppTextStyles.captionBold(color: AppColors.getDanger(context)),
                   ),
                 ),
-                if (isOver)
-                  const Text(
-                    'Limit exceeded!',
-                    style: TextStyle(fontSize: 11, color: Colors.red, fontWeight: FontWeight.bold),
-                  ),
-              ],
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
 }
 
 class _AddBudgetBottomSheet extends ConsumerStatefulWidget {
-  final DateTime selectedMonth;
-  final Budget? existingBudget;
-
   const _AddBudgetBottomSheet({
     required this.selectedMonth,
     this.existingBudget,
   });
+  final DateTime selectedMonth;
+  final Budget? existingBudget;
 
   @override
   ConsumerState<_AddBudgetBottomSheet> createState() => _AddBudgetBottomSheetState();
@@ -424,22 +550,25 @@ class _AddBudgetBottomSheetState extends ConsumerState<_AddBudgetBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+        color: AppColors.getBgSurface(context),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+        border: isDark ? const Border(top: BorderSide(color: Color(0x12FFFFFF))) : null,
       ),
-      padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 24),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(context).viewInsets.bottom + 20),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
             child: Container(
-              width: 40,
+              width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey.shade300,
+                color: AppColors.getBgSunken(context),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -447,23 +576,25 @@ class _AddBudgetBottomSheetState extends ConsumerState<_AddBudgetBottomSheet> {
           const SizedBox(height: 20),
           Text(
             widget.existingBudget != null ? 'Edit Spending Limit' : 'Configure Spending Limit',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: AppTextStyles.headingLg(color: AppColors.getFgPrimary(context)),
           ),
           const SizedBox(height: 20),
           DropdownButtonFormField<ExpenseCategory>(
-            value: _category,
-            decoration: const InputDecoration(
+            initialValue: _category,
+            decoration: InputDecoration(
               labelText: 'Select Category',
-              border: OutlineInputBorder(),
+              filled: true,
+              fillColor: AppColors.getBgSunken(context),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
             ),
-            items: ExpenseCategory.values.map((cat) {
+            items: ExpenseCategory.values.where((c) => c.index <= ExpenseCategory.education.index).map((cat) {
               return DropdownMenuItem(
                 value: cat,
                 child: Text(_formatEnumName(cat.name)),
               );
             }).toList(),
             onChanged: widget.existingBudget != null
-                ? null // category cannot be changed on edit mode for consistency
+                ? null
                 : (val) {
                     if (val != null) {
                       setState(() {
@@ -473,18 +604,23 @@ class _AddBudgetBottomSheetState extends ConsumerState<_AddBudgetBottomSheet> {
                   },
           ),
           const SizedBox(height: 16),
-          // Standard numerical TextFormField (Bypasses clunky keypad bugs)
           TextFormField(
             controller: _limitController,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: [
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
             ],
-            decoration: const InputDecoration(
-              labelText: 'Limit Amount (\$)',
+            decoration: InputDecoration(
+              labelText: r'Limit Amount ($)',
               hintText: '0.00',
-              prefixText: '\$ ',
-              border: OutlineInputBorder(),
+              prefixText: r'$ ',
+              filled: true,
+              fillColor: AppColors.getBgSunken(context),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: AppColors.getBrandPrimary(context), width: 1.5),
+              ),
             ),
           ),
           const SizedBox(height: 24),
@@ -493,8 +629,8 @@ class _AddBudgetBottomSheetState extends ConsumerState<_AddBudgetBottomSheet> {
             height: 52,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.getBrandPrimary(context),
+                foregroundColor: isDark ? AppColors.fgPrimaryLight : AppColors.heroFgLight,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               onPressed: _isSaving
@@ -514,9 +650,12 @@ class _AddBudgetBottomSheetState extends ConsumerState<_AddBudgetBottomSheet> {
 
                       try {
                         final id = widget.existingBudget?.id ?? const Uuid().v4();
+                        final currentUser = ref.read(authStateProvider).valueOrNull;
+                        final userId = currentUser?.id ?? '';
+                        
                         final newBudget = Budget(
                           id: id,
-                          userId: '',
+                          userId: userId,
                           category: _category,
                           limitAmount: limit,
                           currency: 'USD',

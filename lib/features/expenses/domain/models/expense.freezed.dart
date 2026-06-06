@@ -33,7 +33,9 @@ mixin _$Expense {
   DateTime get updatedAt => throw _privateConstructorUsedError;
   String? get note => throw _privateConstructorUsedError;
   String? get receiptImageUrl => throw _privateConstructorUsedError;
+  TransactionType get type => throw _privateConstructorUsedError;
   bool get isSynced => throw _privateConstructorUsedError;
+  bool get isDeleted => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -57,7 +59,9 @@ abstract class $ExpenseCopyWith<$Res> {
       DateTime updatedAt,
       String? note,
       String? receiptImageUrl,
-      bool isSynced});
+      TransactionType type,
+      bool isSynced,
+      bool isDeleted});
 }
 
 /// @nodoc
@@ -84,7 +88,9 @@ class _$ExpenseCopyWithImpl<$Res, $Val extends Expense>
     Object? updatedAt = null,
     Object? note = freezed,
     Object? receiptImageUrl = freezed,
+    Object? type = null,
     Object? isSynced = null,
+    Object? isDeleted = null,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -131,9 +137,17 @@ class _$ExpenseCopyWithImpl<$Res, $Val extends Expense>
           ? _value.receiptImageUrl
           : receiptImageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as TransactionType,
       isSynced: null == isSynced
           ? _value.isSynced
           : isSynced // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isDeleted: null == isDeleted
+          ? _value.isDeleted
+          : isDeleted // ignore: cast_nullable_to_non_nullable
               as bool,
     ) as $Val);
   }
@@ -158,7 +172,9 @@ abstract class _$$ExpenseImplCopyWith<$Res> implements $ExpenseCopyWith<$Res> {
       DateTime updatedAt,
       String? note,
       String? receiptImageUrl,
-      bool isSynced});
+      TransactionType type,
+      bool isSynced,
+      bool isDeleted});
 }
 
 /// @nodoc
@@ -183,7 +199,9 @@ class __$$ExpenseImplCopyWithImpl<$Res>
     Object? updatedAt = null,
     Object? note = freezed,
     Object? receiptImageUrl = freezed,
+    Object? type = null,
     Object? isSynced = null,
+    Object? isDeleted = null,
   }) {
     return _then(_$ExpenseImpl(
       id: null == id
@@ -230,9 +248,17 @@ class __$$ExpenseImplCopyWithImpl<$Res>
           ? _value.receiptImageUrl
           : receiptImageUrl // ignore: cast_nullable_to_non_nullable
               as String?,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
+              as TransactionType,
       isSynced: null == isSynced
           ? _value.isSynced
           : isSynced // ignore: cast_nullable_to_non_nullable
+              as bool,
+      isDeleted: null == isDeleted
+          ? _value.isDeleted
+          : isDeleted // ignore: cast_nullable_to_non_nullable
               as bool,
     ));
   }
@@ -253,7 +279,9 @@ class _$ExpenseImpl implements _Expense {
       required this.updatedAt,
       this.note,
       this.receiptImageUrl,
-      this.isSynced = false});
+      this.type = TransactionType.expense,
+      this.isSynced = false,
+      this.isDeleted = false});
 
   factory _$ExpenseImpl.fromJson(Map<String, dynamic> json) =>
       _$$ExpenseImplFromJson(json);
@@ -285,11 +313,17 @@ class _$ExpenseImpl implements _Expense {
   final String? receiptImageUrl;
   @override
   @JsonKey()
+  final TransactionType type;
+  @override
+  @JsonKey()
   final bool isSynced;
+  @override
+  @JsonKey()
+  final bool isDeleted;
 
   @override
   String toString() {
-    return 'Expense(id: $id, userId: $userId, amount: $amount, currency: $currency, category: $category, date: $date, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, note: $note, receiptImageUrl: $receiptImageUrl, isSynced: $isSynced)';
+    return 'Expense(id: $id, userId: $userId, amount: $amount, currency: $currency, category: $category, date: $date, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, note: $note, receiptImageUrl: $receiptImageUrl, type: $type, isSynced: $isSynced, isDeleted: $isDeleted)';
   }
 
   @override
@@ -313,8 +347,11 @@ class _$ExpenseImpl implements _Expense {
             (identical(other.note, note) || other.note == note) &&
             (identical(other.receiptImageUrl, receiptImageUrl) ||
                 other.receiptImageUrl == receiptImageUrl) &&
+            (identical(other.type, type) || other.type == type) &&
             (identical(other.isSynced, isSynced) ||
-                other.isSynced == isSynced));
+                other.isSynced == isSynced) &&
+            (identical(other.isDeleted, isDeleted) ||
+                other.isDeleted == isDeleted));
   }
 
   @JsonKey(ignore: true)
@@ -332,7 +369,9 @@ class _$ExpenseImpl implements _Expense {
       updatedAt,
       note,
       receiptImageUrl,
-      isSynced);
+      type,
+      isSynced,
+      isDeleted);
 
   @JsonKey(ignore: true)
   @override
@@ -361,7 +400,9 @@ abstract class _Expense implements Expense {
       required final DateTime updatedAt,
       final String? note,
       final String? receiptImageUrl,
-      final bool isSynced}) = _$ExpenseImpl;
+      final TransactionType type,
+      final bool isSynced,
+      final bool isDeleted}) = _$ExpenseImpl;
 
   factory _Expense.fromJson(Map<String, dynamic> json) = _$ExpenseImpl.fromJson;
 
@@ -388,7 +429,11 @@ abstract class _Expense implements Expense {
   @override
   String? get receiptImageUrl;
   @override
+  TransactionType get type;
+  @override
   bool get isSynced;
+  @override
+  bool get isDeleted;
   @override
   @JsonKey(ignore: true)
   _$$ExpenseImplCopyWith<_$ExpenseImpl> get copyWith =>

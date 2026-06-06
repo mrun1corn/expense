@@ -1,7 +1,10 @@
+import 'package:expense/core/theme/app_theme.dart';
+import 'package:expense/features/auth/presentation/auth_provider.dart';
+import 'package:expense/features/budgets/presentation/providers/budget_provider.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:expense/features/expenses/presentation/providers/sync_provider.dart';
-import 'package:expense/features/budgets/presentation/providers/budget_provider.dart';
+import 'package:expense/features/home/presentation/screens/main_shell_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
@@ -16,588 +19,70 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
-  String _searchQuery = '';
-  ExpenseCategory? _selectedCategory;
   DateTime _selectedMonth = DateTime.now();
 
-  @override
-  Widget build(BuildContext context) {
-    // Trigger background sync listeners
-    ref.watch(activeCloudSyncProvider);
-
-    final expensesAsync = ref.watch(expensesStreamProvider);
-    final totalSpentAsync = ref.watch(totalThisMonthProvider);
-    final budgetsAsync = ref.watch(budgetsStreamProvider(_selectedMonth));
-
-    return Scaffold(
-      body: SafeArea(
-        child: RefreshIndicator(
-          onRefresh: () async {
-            // Hot reload/refresh stream
-            ref.invalidate(expensesStreamProvider);
-            ref.invalidate(totalThisMonthProvider);
-          },
-          child: CustomScrollView(
-            slivers: [
-              // Premium App Bar & Search Header
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Smart Spend',
-                            style: Theme.of(context).textTheme.headlineMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                          ),
-                          Text(
-                            DateFormat('EEEE, MMM d').format(DateTime.now()),
-                            style: Theme.of(context).textTheme.bodyMedium
-                                ?.copyWith(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
-                      ),
-                      // Month Selector Badge
-                      ActionChip(
-                        avatar: Icon(
-                          Icons.calendar_month,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        label: Text(
-                          DateFormat('MMMM yyyy').format(_selectedMonth),
-                        ),
-                        onPressed: () => _showMonthPicker(context),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Search Box
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: SearchBar(
-                    hintText: 'Search spending...',
-                    leading: const Icon(Icons.search),
-                    trailing: _searchQuery.isNotEmpty
-                        ? [
-                            IconButton(
-                              icon: const Icon(Icons.clear),
-                              onPressed: () {
-                                setState(() {
-                                  _searchQuery = '';
-                                });
-                              },
-                            ),
-                          ]
-                        : null,
-                    onChanged: (value) {
-                      setState(() {
-                        _searchQuery = value;
-                      });
-                    },
-                    elevation: WidgetStateProperty.all(0),
-                    backgroundColor: WidgetStateProperty.all(
-                      Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerHighest.withOpacity(0.5),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Glassmorphism Spending Card
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          Theme.of(context).colorScheme.primaryContainer,
-                          Theme.of(
-                            context,
-                          ).colorScheme.secondaryContainer.withOpacity(0.7),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Theme.of(
-                            context,
-                          ).colorScheme.shadow.withOpacity(0.08),
-                          blurRadius: 16,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Monthly Total',
-                              style: Theme.of(context).textTheme.titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onPrimaryContainer,
-                                  ),
-                            ),
-                            const Icon(Icons.trending_up, color: Colors.green),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        totalSpentAsync.when(
-                          data: (total) => Text(
-                            '💵${total.toStringAsFixed(2)}',
-                            style: Theme.of(context).textTheme.headlineLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.onPrimaryContainer,
-                                ),
-                          ),
-                          loading: () => const SizedBox(
-                            height: 36,
-                            width: 36,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                          error: (_, _) => Text(
-                            '💵0.00',
-                            style: Theme.of(context).textTheme.headlineLarge,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        budgetsAsync.when(
-                          data: (budgets) {
-                            if (budgets.isEmpty) {
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'No budgets configured',
-                                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                              color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-                                            ),
-                                      ),
-                                      TextButton.icon(
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                                          padding: EdgeInsets.zero,
-                                          minimumSize: Size.zero,
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        icon: const Icon(Icons.add, size: 14),
-                                        label: const Text('Set Limits', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                        onPressed: () => context.push('/budgets'),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: LinearProgressIndicator(
-                                      value: 0.0,
-                                      backgroundColor: Colors.white.withValues(alpha: 0.25),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            }
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Budget Progress',
-                                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: Theme.of(context).colorScheme.onPrimaryContainer.withValues(alpha: 0.7),
-                                          ),
-                                    ),
-                                    expensesAsync.when(
-                                      data: (expenses) {
-                                        final monthlyExpenses = expenses.where((e) =>
-                                            e.date.month == _selectedMonth.month &&
-                                            e.date.year == _selectedMonth.year).toList();
-
-                                        final spentByCategory = <ExpenseCategory, double>{};
-                                        for (final exp in monthlyExpenses) {
-                                          spentByCategory[exp.category] = (spentByCategory[exp.category] ?? 0.0) + exp.amount;
-                                        }
-
-                                        double totalBudgetLimit = 0.0;
-                                        double totalBudgetSpent = 0.0;
-
-                                        for (final b in budgets) {
-                                          totalBudgetLimit += b.limitAmount;
-                                          totalBudgetSpent += spentByCategory[b.category] ?? 0.0;
-                                        }
-
-                                        final percent = totalBudgetLimit > 0 ? (totalBudgetSpent / totalBudgetLimit).clamp(0.0, 1.0) : 0.0;
-
-                                        return Text(
-                                          '${(percent * 100).toStringAsFixed(0)}% of 💵${totalBudgetLimit.toStringAsFixed(0)}',
-                                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                                fontWeight: FontWeight.bold,
-                                                color: Theme.of(context).colorScheme.onPrimaryContainer,
-                                              ),
-                                        );
-                                      },
-                                      loading: () => const Text('Loading...'),
-                                      error: (_, __) => const Text('💵0'),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 6),
-                                expensesAsync.when(
-                                  data: (expenses) {
-                                    final monthlyExpenses = expenses.where((e) =>
-                                        e.date.month == _selectedMonth.month &&
-                                        e.date.year == _selectedMonth.year).toList();
-
-                                    final spentByCategory = <ExpenseCategory, double>{};
-                                    for (final exp in monthlyExpenses) {
-                                      spentByCategory[exp.category] = (spentByCategory[exp.category] ?? 0.0) + exp.amount;
-                                    }
-
-                                    double totalBudgetLimit = 0.0;
-                                    double totalBudgetSpent = 0.0;
-
-                                    for (final b in budgets) {
-                                      totalBudgetLimit += b.limitAmount;
-                                      totalBudgetSpent += spentByCategory[b.category] ?? 0.0;
-                                    }
-
-                                    final percent = totalBudgetLimit > 0 ? (totalBudgetSpent / totalBudgetLimit).clamp(0.0, 1.0) : 0.0;
-
-                                    return ClipRRect(
-                                      borderRadius: BorderRadius.circular(4),
-                                      child: LinearProgressIndicator(
-                                        value: percent,
-                                        backgroundColor: Colors.white24,
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          percent > 0.9 ? Colors.redAccent : (percent > 0.75 ? Colors.orange : Colors.green),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  loading: () => const LinearProgressIndicator(value: 0.0),
-                                  error: (_, __) => const LinearProgressIndicator(value: 0.0),
-                                ),
-                                const SizedBox(height: 4),
-                                Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton.icon(
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                                      padding: EdgeInsets.zero,
-                                      minimumSize: Size.zero,
-                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                    ),
-                                    icon: const Icon(Icons.edit, size: 12),
-                                    label: const Text('Manage Budgets', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                                    onPressed: () => context.push('/budgets'),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                          loading: () => const SizedBox(height: 30),
-                          error: (_, __) => const SizedBox(height: 30),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-
-              // Category Filter Chips
-              SliverToBoxAdapter(
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    children: [
-                      ChoiceChip(
-                        label: const Text('All'),
-                        selected: _selectedCategory == null,
-                        onSelected: (selected) {
-                          if (selected) {
-                            setState(() {
-                              _selectedCategory = null;
-                            });
-                          }
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      ...ExpenseCategory.values.map((category) {
-                        return Padding(
-                          padding: const EdgeInsets.only(right: 8),
-                          child: ChoiceChip(
-                            avatar: Icon(
-                              _getCategoryIcon(category),
-                              size: 16,
-                            ),
-                            label: Text(_formatEnumName(category.name)),
-                            selected: _selectedCategory == category,
-                            onSelected: (selected) {
-                              setState(() {
-                                _selectedCategory = selected ? category : null;
-                              });
-                            },
-                          ),
-                        );
-                      }),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Expenses List Header
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: Text(
-                    'Recent Spending',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              // Expenses List Content
-              expensesAsync.when(
-                data: (list) {
-                  // Filter list locally by search query, category, and month
-                  final filteredList = list.where((e) {
-                    final matchesSearch =
-                        e.title.toLowerCase().contains(
-                          _searchQuery.toLowerCase(),
-                        ) ||
-                        (e.note != null &&
-                            e.note!.toLowerCase().contains(
-                              _searchQuery.toLowerCase(),
-                            ));
-                    final matchesCategory =
-                        _selectedCategory == null ||
-                        e.category == _selectedCategory;
-                    final matchesMonth =
-                        e.date.month == _selectedMonth.month &&
-                        e.date.year == _selectedMonth.year;
-                    return matchesSearch && matchesCategory && matchesMonth;
-                  }).toList();
-
-                  if (filteredList.isEmpty) {
-                    return SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Semantics(
-                              label: 'No expenses tracked yet',
-                              child: const Icon(
-                                Icons.receipt_long_outlined,
-                                size: 64,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            const Text(
-                              'No expenses found',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.grey,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Try modifying your search or add a new expense.',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }
-
-                  // Group expenses by calendar date
-                  final groupedExpenses = <String, List<Expense>>{};
-                  for (final exp in filteredList) {
-                    final dateStr = DateFormat(
-                      'EEEE, MMMM d, yyyy',
-                    ).format(exp.date);
-                    if (groupedExpenses[dateStr] == null) {
-                      groupedExpenses[dateStr] = [];
-                    }
-                    groupedExpenses[dateStr]!.add(exp);
-                  }
-
-                  final dateKeys = groupedExpenses.keys.toList();
-
-                  return SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                      (context, index) {
-                        final dateStr = dateKeys[index];
-                        final dayExpenses = groupedExpenses[dateStr]!;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Date header
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(
-                                16,
-                                16,
-                                16,
-                                8,
-                              ),
-                              child: Text(
-                                dateStr,
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                            ),
-                            // List of expenses for this date
-                            ...dayExpenses.map((exp) {
-                              return Slidable(
-                                key: ValueKey(exp.id),
-                                endActionPane: ActionPane(
-                                  motion: const BehindMotion(),
-                                  dismissible: DismissiblePane(
-                                    onDismissed: () {
-                                      _deleteExpense(ref, exp);
-                                    },
-                                  ),
-                                  children: [
-                                    SlidableAction(
-                                      onPressed: (context) {
-                                        _deleteExpense(ref, exp);
-                                      },
-                                      backgroundColor: Colors.red,
-                                      foregroundColor: Colors.white,
-                                      icon: Icons.delete,
-                                      label: 'Delete',
-                                    ),
-                                  ],
-                                ),
-                                child: ListTile(
-                                  leading: CircleAvatar(
-                                    backgroundColor: Theme.of(
-                                      context,
-                                    ).colorScheme.surfaceContainerHighest,
-                                    child: Icon(
-                                      _getCategoryIcon(exp.category),
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                  ),
-                                  title: Text(
-                                    exp.title,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  subtitle: Text(
-                                    '${_formatEnumName(exp.category.name)} • ${DateFormat('h:mm a').format(exp.date)}',
-                                  ),
-                                  trailing: Text(
-                                    '💵${exp.amount.toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.primary,
-                                    ),
-                                  ),
-                                  onTap: () {
-                                    context.push(
-                                      '/expense/${exp.id}',
-                                      extra: exp,
-                                    );
-                                  },
-                                ),
-                              );
-                            }),
-                          ],
-                        );
-                      },
-                      childCount: dateKeys.length,
-                    ),
-                  );
-                },
-                loading: () => const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-                error: (error, _) => SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(
-                    child: Text('Error: $error'),
-                  ),
-                ),
-              ),
-              const SliverPadding(padding: EdgeInsets.only(bottom: 80)),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        icon: const Icon(Icons.add),
-        label: const Text('Add Spend'),
-        onPressed: () {
-          context.push('/add');
-        },
-      ),
+  Future<void> _showMonthPicker(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedMonth,
+      firstDate: DateTime(now.year - 5),
+      lastDate: DateTime(now.year + 5),
+      initialDatePickerMode: DatePickerMode.year,
     );
+    if (picked != null) {
+      setState(() {
+        _selectedMonth = DateTime(picked.year, picked.month);
+      });
+    }
   }
 
-  // Deletes an expense and shows an undo snackbar
+  // Visual icons for categories
+  IconData _getCategoryIcon(ExpenseCategory category) {
+    switch (category) {
+      case ExpenseCategory.food: return Icons.restaurant;
+      case ExpenseCategory.transport: return Icons.directions_car;
+      case ExpenseCategory.utilities: return Icons.electrical_services;
+      case ExpenseCategory.entertainment: return Icons.movie;
+      case ExpenseCategory.shopping: return Icons.shopping_bag;
+      case ExpenseCategory.health: return Icons.medical_services;
+      case ExpenseCategory.education: return Icons.school;
+      case ExpenseCategory.salary: return Icons.work;
+      case ExpenseCategory.business: return Icons.storefront;
+      case ExpenseCategory.investment: return Icons.trending_up;
+      case ExpenseCategory.gift: return Icons.card_giftcard;
+      case ExpenseCategory.friend: return Icons.people;
+      case ExpenseCategory.bank: return Icons.account_balance;
+      case ExpenseCategory.family: return Icons.house;
+      case ExpenseCategory.other: return Icons.more_horiz;
+    }
+  }
+
+  Color _getCategoryColor(ExpenseCategory category) {
+    switch (category) {
+      case ExpenseCategory.food: return Colors.orange;
+      case ExpenseCategory.transport: return Colors.blue;
+      case ExpenseCategory.shopping: return Colors.purple;
+      case ExpenseCategory.utilities: return Colors.amber;
+      case ExpenseCategory.health: return Colors.red;
+      case ExpenseCategory.entertainment: return Colors.green;
+      case ExpenseCategory.education: return Colors.indigo;
+      case ExpenseCategory.salary: return Colors.teal;
+      case ExpenseCategory.business: return Colors.cyan;
+      case ExpenseCategory.investment: return Colors.lightGreen;
+      case ExpenseCategory.gift: return Colors.deepPurple;
+      case ExpenseCategory.friend: return Colors.brown;
+      case ExpenseCategory.bank: return Colors.blueGrey;
+      case ExpenseCategory.family: return Colors.pink;
+      case ExpenseCategory.other: return Colors.grey;
+    }
+  }
+
+  String _formatEnumName(String name) {
+    if (name.isEmpty) return '';
+    return name[0].toUpperCase() + name.substring(1);
+  }
+
   void _deleteExpense(WidgetRef ref, Expense exp) {
     ref.read(expenseRepositoryProvider).deleteExpense(exp.id);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -613,47 +98,629 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  // Visual icons for categories
-  IconData _getCategoryIcon(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.food:
-        return Icons.restaurant;
-      case ExpenseCategory.transport:
-        return Icons.directions_car;
-      case ExpenseCategory.utilities:
-        return Icons.electrical_services;
-      case ExpenseCategory.entertainment:
-        return Icons.movie;
-      case ExpenseCategory.shopping:
-        return Icons.shopping_bag;
-      case ExpenseCategory.health:
-        return Icons.medical_services;
-      case ExpenseCategory.education:
-        return Icons.school;
-      case ExpenseCategory.other:
-        return Icons.more_horiz;
-    }
-  }
+  @override
+  Widget build(BuildContext context) {
+    // Trigger background sync listeners
+    ref.watch(activeCloudSyncProvider);
 
-  // Capitalize enum name nicely
-  String _formatEnumName(String name) {
-    if (name.isEmpty) return '';
-    return name[0].toUpperCase() + name.substring(1);
-  }
+    final expensesAsync = ref.watch(expensesStreamProvider);
+    final budgetsAsync = ref.watch(budgetsStreamProvider(_selectedMonth));
+    final currentUser = ref.watch(authStateProvider).valueOrNull;
+    final userName = currentUser?.displayName ?? 'Alex';
 
-  // Opens a month and year selector dialog
-  Future<void> _showMonthPicker(BuildContext context) async {
-    final selected = await showDatePicker(
-      context: context,
-      initialDate: _selectedMonth,
-      firstDate: DateTime(2020),
-      lastDate: DateTime(2100),
-      helpText: 'SELECT MONTH',
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final rentSettings = ref.watch(rentSettingsProvider);
+    final rentAmount = rentSettings.amount;
+    final dueDay = rentSettings.dueDay;
+
+    return Scaffold(
+      backgroundColor: AppColors.getBgBase(context),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            ref
+              ..invalidate(expensesStreamProvider)
+              ..invalidate(budgetsStreamProvider(_selectedMonth));
+          },
+          child: expensesAsync.when(
+            data: (expenses) => budgetsAsync.when(
+              data: (budgets) {
+                // Filter this month's expenses
+                final thisMonthExpenses = expenses.where((e) =>
+                    e.date.month == _selectedMonth.month &&
+                    e.date.year == _selectedMonth.year &&
+                    !e.isDeleted).toList();
+
+                final rentPayments = expenses
+                    .where((e) =>
+                        (e.title.toLowerCase().contains('rent') ||
+                            e.note?.toLowerCase().contains('rent') == true) &&
+                        e.type == TransactionType.expense &&
+                        !e.isDeleted)
+                    .toList();
+                
+                final now = DateTime.now();
+                final paidThisMonth = rentPayments.any((e) => e.date.month == now.month && e.date.year == now.year);
+                
+                DateTime nextDueDate;
+                if (paidThisMonth) {
+                  nextDueDate = DateTime(now.year, now.month + 1, dueDay);
+                } else {
+                  nextDueDate = DateTime(now.year, now.month, dueDay);
+                }
+
+                final daysRemaining = nextDueDate.difference(now).inDays;
+                final displayRemaining = daysRemaining <= 0 ? 'Due today' : '$daysRemaining days';
+                final displaySub = '${DateFormat('MMM d').format(nextDueDate)} - \$${rentAmount.toStringAsFixed(0)}';
+
+                final totalIncome = thisMonthExpenses
+                    .where((e) => e.type == TransactionType.income)
+                    .fold<double>(0, (sum, e) => sum + e.amount);
+
+                final totalExpenses = thisMonthExpenses
+                    .where((e) => e.type == TransactionType.expense)
+                    .fold<double>(0, (sum, e) => sum + e.amount);
+
+                final netSaved = totalIncome - totalExpenses;
+
+                // Calculate budget parameters
+                final spentByCategory = <ExpenseCategory, double>{};
+                for (final exp in thisMonthExpenses) {
+                  if (exp.type == TransactionType.expense) {
+                    spentByCategory[exp.category] = (spentByCategory[exp.category] ?? 0.0) + exp.amount;
+                  }
+                }
+
+                var totalBudgetLimit = 0.0;
+                for (final b in budgets) {
+                  totalBudgetLimit += b.limitAmount;
+                }
+
+                // Default budget threshold if none configured
+                if (totalBudgetLimit == 0.0) {
+                  totalBudgetLimit = 1500.0;
+                }
+
+                final percent = (totalExpenses / totalBudgetLimit).clamp(0.0, 1.0);
+                final remaining = (totalBudgetLimit - totalExpenses).clamp(0.0, double.infinity);
+
+                // Calculate dynamic delta change vs last month
+                final lastMonthDate = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+                final lastMonthExpensesList = expenses.where((e) =>
+                    e.date.month == lastMonthDate.month &&
+                    e.date.year == lastMonthDate.year &&
+                    e.type == TransactionType.expense &&
+                    !e.isDeleted).toList();
+                final lastMonthTotal = lastMonthExpensesList.fold<double>(0, (sum, e) => sum + e.amount);
+
+                final deltaPercent = lastMonthTotal > 0
+                    ? ((totalExpenses - lastMonthTotal) / lastMonthTotal) * 100
+                    : 0;
+
+                // Filter for recent transactions
+                final sortedRecent = List<Expense>.from(thisMonthExpenses)
+                  ..sort((a, b) => b.date.compareTo(a.date));
+                final recentThree = sortedRecent.take(3).toList();
+
+                return CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    // Top Bar Header
+                    SliverToBoxAdapter(
+                      child: ScreenHeader(
+                        title: DateFormat('MMMM yyyy').format(_selectedMonth),
+                        overline: 'GOOD MORNING, ${userName.toUpperCase()}',
+                        action: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            GestureDetector(
+                              onTap: () => _showMonthPicker(context),
+                              child: Icon(
+                                Icons.keyboard_arrow_down,
+                                color: AppColors.getFgPrimary(context),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            IconButton(
+                              icon: const Icon(Icons.auto_awesome),
+                              color: AppColors.getInfo(context),
+                              onPressed: () => context.push('/settings/notifications'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Total Spent Hero Card
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.getHeroBg(context),
+                            borderRadius: BorderRadius.circular(16),
+                            border: isDark ? Border.all(color: const Color(0x1FFFFFFF)) : null,
+                            boxShadow: AppShadows.getShadow1(context),
+                          ),
+                          padding: const EdgeInsets.all(20),
+                          child: Stack(
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'TOTAL SPENT',
+                                    style: AppTextStyles.overline(color: AppColors.getHeroFgMuted(context)),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    '\$${totalExpenses.toStringAsFixed(2)}',
+                                    style: AppTextStyles.monospace(
+                                      32,
+                                      color: AppColors.getHeroFg(context),
+                                      weight: FontWeight.w700,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'of \$${totalBudgetLimit.toStringAsFixed(0)} budget',
+                                    style: AppTextStyles.bodySm(color: AppColors.getHeroFgMuted(context)),
+                                  ),
+                                  const SizedBox(height: 20),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(3),
+                                    child: SizedBox(
+                                      height: 6,
+                                      child: LinearProgressIndicator(
+                                        value: percent,
+                                        backgroundColor: const Color(0x22FFFFFF),
+                                        valueColor: AlwaysStoppedAnimation<Color>(
+                                          percent > 0.9
+                                              ? AppColors.dangerLight
+                                              : (percent > 0.75
+                                                  ? AppColors.warningLight
+                                                  : AppColors.getHeroFg(context)),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        r'$0',
+                                        style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
+                                      ),
+                                      Text(
+                                        r'$' '${remaining.toStringAsFixed(0)} left',
+                                        style: AppTextStyles.captionBold(color: AppColors.getHeroFg(context)),
+                                      ),
+                                      Text(
+                                        r'$' '${totalBudgetLimit.toStringAsFixed(0)}',
+                                        style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    color: deltaPercent >= 0
+                                        ? (isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFEE2E2))
+                                        : (isDark ? const Color(0xFF14532D) : const Color(0xFFDCFCE7)),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        deltaPercent >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                                        size: 10,
+                                        color: deltaPercent >= 0 ? AppColors.getDanger(context) : AppColors.getSuccess(context),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        '${deltaPercent >= 0 ? "+" : "-"}${deltaPercent.abs().toStringAsFixed(0)}% vs last month',
+                                        style: AppTextStyles.captionBold(
+                                          color: deltaPercent >= 0 ? AppColors.getDanger(context) : AppColors.getSuccess(context),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Quick Stats Row (2 columns, 12px gap)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                decoration: AppShadows.getCardDecoration(context, radius: 12),
+                                padding: const EdgeInsets.all(14),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          'SAVED',
+                                          style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                                        ),
+                                        Icon(Icons.savings_outlined, size: 16, color: AppColors.getFgTertiary(context)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '\$${netSaved.toStringAsFixed(0)}',
+                                      style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'vs last month',
+                                      style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () => context.push('/rent-tracker'),
+                                child: Container(
+                                  decoration: AppShadows.getCardDecoration(context, radius: 12),
+                                  padding: const EdgeInsets.all(14),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'RENT DUE',
+                                            style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                                          ),
+                                          Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.getFgTertiary(context)),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        displayRemaining,
+                                        style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        '$displaySub · Manage',
+                                        style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Spending Breakdown Title
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'SPENDING BREAKDOWN',
+                              style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                            ),
+                            GestureDetector(
+                              onTap: () => context.push('/budgets'),
+                              child: Text(
+                                'Manage Budgets',
+                                style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)).copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Spending Breakdown progress bars (compact - 5 categories)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                        child: Container(
+                          decoration: AppShadows.getCardDecoration(context),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            children: () {
+                              final activeCategories = spentByCategory.entries.toList()
+                                ..sort((a, b) => b.value.compareTo(a.value));
+                              
+                              if (activeCategories.isEmpty) {
+                                return [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(vertical: 20),
+                                    child: Text(
+                                      'No expenses registered yet.',
+                                      style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                                    ),
+                                  )
+                                ];
+                              }
+
+                              return activeCategories.take(5).map((entry) {
+                                final cat = entry.key;
+                                final catSpent = entry.value;
+                                final catPercent = totalExpenses > 0 ? (catSpent / totalExpenses) : 0.0;
+                                final catColor = _getCategoryColor(cat);
+
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Row(
+                                    children: [
+                                      Icon(_getCategoryIcon(cat), size: 14, color: catColor),
+                                      const SizedBox(width: 8),
+                                      SizedBox(
+                                        width: 90,
+                                        child: Text(
+                                          _formatEnumName(cat.name),
+                                          style: AppTextStyles.bodySm(
+                                            color: AppColors.getFgPrimary(context),
+                                          ).copyWith(fontWeight: FontWeight.w500),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Expanded(
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(3),
+                                          child: SizedBox(
+                                            height: 6,
+                                            child: LinearProgressIndicator(
+                                              value: catPercent,
+                                              backgroundColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E5E5),
+                                              valueColor: AlwaysStoppedAnimation<Color>(catColor),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      SizedBox(
+                                        width: 32,
+                                        child: Text(
+                                          '${(catPercent * 100).toStringAsFixed(0)}%',
+                                          textAlign: TextAlign.right,
+                                          style: AppTextStyles.captionBold(
+                                            color: AppColors.getFgSecondary(context),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList();
+                            }(),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Recent Transactions Header
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'RECENT TRANSACTIONS',
+                              style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                // Clear filter or go to insights
+                              },
+                              child: Text(
+                                'See All',
+                                style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)).copyWith(
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Recent Transactions Content
+                    if (recentThree.isEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Center(
+                            child: Text(
+                              'No transactions recorded this month.',
+                              style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                            ),
+                          ),
+                        ),
+                      )
+                    else
+                      SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final exp = recentThree[index];
+                                final isExpense = exp.type == TransactionType.expense;
+                                final isIncome = exp.type == TransactionType.income;
+                                final prefix = isIncome ? r'+$' : (isExpense ? r'-$' : r'$');
+                                final amountColor = isIncome
+                                    ? AppColors.getSuccess(context)
+                                    : (isExpense ? AppColors.getFgPrimary(context) : AppColors.getBrandPrimary(context));
+
+                                return Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                                  child: Container(
+                                    decoration: AppShadows.getCardDecoration(context, radius: 12),
+                                    child: Slidable(
+                                      key: ValueKey(exp.id),
+                                      endActionPane: ActionPane(
+                                        motion: const BehindMotion(),
+                                        dismissible: DismissiblePane(
+                                          onDismissed: () => _deleteExpense(ref, exp),
+                                        ),
+                                        children: [
+                                          SlidableAction(
+                                            onPressed: (context) => _deleteExpense(ref, exp),
+                                            backgroundColor: AppColors.dangerLight,
+                                            foregroundColor: Colors.white,
+                                            icon: Icons.delete,
+                                            label: 'Delete',
+                                          ),
+                                        ],
+                                      ),
+                                      child: ListTile(
+                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                        leading: CircleAvatar(
+                                          backgroundColor: AppColors.getBgSunken(context),
+                                          radius: 18,
+                                          child: Icon(
+                                            _getCategoryIcon(exp.category),
+                                            color: _getCategoryColor(exp.category),
+                                            size: 18,
+                                          ),
+                                        ),
+                                        title: Text(
+                                          exp.title,
+                                          style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
+                                        ),
+                                        subtitle: Text(
+                                          '${_formatEnumName(exp.category.name)} · ${DateFormat('h:mm a').format(exp.date)}',
+                                          style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                                        ),
+                                        trailing: Text(
+                                          '$prefix${exp.amount.toStringAsFixed(2)}',
+                                          style: AppTextStyles.monospace(
+                                            14,
+                                            color: amountColor,
+                                            weight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        onTap: () {
+                                          context.push('/expense/${exp.id}', extra: exp);
+                                        },
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                              childCount: recentThree.length,
+                            ),
+                          ),
+
+                    // AI Insight Block
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: AppColors.getBgSunken(context),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.auto_awesome,
+                                color: AppColors.getInfo(context),
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'AI Insight',
+                                      style: AppTextStyles.captionBold(color: AppColors.getInfo(context)),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      totalExpenses > totalBudgetLimit * 0.8
+                                          ? 'You have spent ${(percent * 100).toStringAsFixed(0)}% of your monthly budget. Consider limiting non-essential shopping to avoid exceeding limits.'
+                                          : 'Your monthly spending is well optimized. You have saved \$${netSaved.toStringAsFixed(0)} so far. Keep it up!',
+                                      style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // "+ Add Transaction" — Primary Button
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              ref.read(shellTabIndexProvider.notifier).state = 1;
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.getBrandPrimary(context),
+                              foregroundColor: isDark ? AppColors.brandFgDark : Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              elevation: 1,
+                            ),
+                            child: Text(
+                              '+ Add Transaction',
+                              style: AppTextStyles.headingSm(
+                                color: isDark ? AppColors.brandFgDark : Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SliverPadding(padding: EdgeInsets.only(bottom: 96)),
+                  ],
+                );
+              },
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (e, _) => Center(child: Text('Error loading budgets: $e')),
+            ),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (e, _) => Center(child: Text('Error loading expenses: $e')),
+          ),
+        ),
+      ),
     );
-    if (selected != null) {
-      setState(() {
-        _selectedMonth = DateTime(selected.year, selected.month);
-      });
-    }
   }
 }

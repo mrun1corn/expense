@@ -19,7 +19,10 @@ _$ExpenseImpl _$$ExpenseImplFromJson(Map<String, dynamic> json) =>
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       note: json['note'] as String?,
       receiptImageUrl: json['receiptImageUrl'] as String?,
+      type: $enumDecodeNullable(_$TransactionTypeEnumMap, json['type']) ??
+          TransactionType.expense,
       isSynced: json['isSynced'] as bool? ?? false,
+      isDeleted: json['isDeleted'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$$ExpenseImplToJson(_$ExpenseImpl instance) =>
@@ -35,7 +38,9 @@ Map<String, dynamic> _$$ExpenseImplToJson(_$ExpenseImpl instance) =>
       'updatedAt': instance.updatedAt.toIso8601String(),
       'note': instance.note,
       'receiptImageUrl': instance.receiptImageUrl,
+      'type': _$TransactionTypeEnumMap[instance.type]!,
       'isSynced': instance.isSynced,
+      'isDeleted': instance.isDeleted,
     };
 
 const _$ExpenseCategoryEnumMap = {
@@ -46,5 +51,19 @@ const _$ExpenseCategoryEnumMap = {
   ExpenseCategory.shopping: 'shopping',
   ExpenseCategory.health: 'health',
   ExpenseCategory.education: 'education',
+  ExpenseCategory.salary: 'salary',
+  ExpenseCategory.business: 'business',
+  ExpenseCategory.investment: 'investment',
+  ExpenseCategory.gift: 'gift',
+  ExpenseCategory.friend: 'friend',
+  ExpenseCategory.bank: 'bank',
+  ExpenseCategory.family: 'family',
   ExpenseCategory.other: 'other',
+};
+
+const _$TransactionTypeEnumMap = {
+  TransactionType.expense: 'expense',
+  TransactionType.income: 'income',
+  TransactionType.borrow: 'borrow',
+  TransactionType.lend: 'lend',
 };

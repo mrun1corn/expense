@@ -1,18 +1,15 @@
+import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:expense/features/auth/presentation/auth_provider.dart';
-import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AiAuthFallback extends ConsumerStatefulWidget {
-  final String title;
-  final String subtitle;
 
   const AiAuthFallback({
-    super.key,
-    required this.title,
-    required this.subtitle,
+    required this.title, required this.subtitle, super.key,
   });
+  final String title;
+  final String subtitle;
 
   @override
   ConsumerState<AiAuthFallback> createState() => _AiAuthFallbackState();
@@ -72,12 +69,9 @@ class _AiAuthFallbackState extends ConsumerState<AiAuthFallback> {
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authControllerProvider);
-    final isLoadingAuth = authState.isLoading;
-
     return Center(
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -103,7 +97,7 @@ class _AiAuthFallbackState extends ConsumerState<AiAuthFallback> {
                     width: 1.5,
                   ),
                 ),
-                padding: const EdgeInsets.all(28.0),
+                padding: const EdgeInsets.all(28),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -151,7 +145,7 @@ class _AiAuthFallbackState extends ConsumerState<AiAuthFallback> {
                           const SizedBox(height: 8),
                           _buildStepItem('1', 'Tap "Get Free Key" to open Google AI Studio.'),
                           _buildStepItem('2', 'Create and copy your API Key.'),
-                          _buildStepItem('3', 'Paste and save below, or sign in to sync.'),
+                          _buildStepItem('3', 'Paste and save below to unlock AI features.'),
                         ],
                       ),
                     ),
@@ -200,42 +194,8 @@ class _AiAuthFallbackState extends ConsumerState<AiAuthFallback> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            onPressed: isLoadingAuth
-                                ? null
-                                : () async {
-                                    try {
-                                      await ref
-                                          .read(authControllerProvider.notifier)
-                                          .signInWithGoogle();
-                                    } catch (e) {
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(content: Text('Sign-in failed: $e')),
-                                        );
-                                      }
-                                    }
-                                  },
-                            child: isLoadingAuth
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  )
-                                : const Text('Sign In'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
+                        SizedBox(
+                          width: double.infinity,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Theme.of(context).colorScheme.primary,
@@ -291,8 +251,6 @@ class _AiAuthFallbackState extends ConsumerState<AiAuthFallback> {
                                 : const Text('Save & Unlock'),
                           ),
                         ),
-                      ],
-                    ),
                   ],
                 ),
               ),

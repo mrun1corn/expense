@@ -1,6 +1,8 @@
 import 'package:expense/core/db/isar_service.dart';
 import 'package:expense/core/router/app_router.dart';
+import 'package:expense/core/theme/app_theme.dart';
 import 'package:expense/core/utils/notification_manager.dart';
+import 'package:expense/features/settings/presentation/providers/settings_provider.dart';
 import 'package:expense/firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -45,22 +47,13 @@ class SmartExpenseApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final goRouter = ref.watch(routerProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'Smart Expense Tracker',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-        ),
-        useMaterial3: true,
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: Colors.deepPurple,
-          brightness: Brightness.dark,
-        ),
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: themeMode,
       routerConfig: goRouter,
     );
   }

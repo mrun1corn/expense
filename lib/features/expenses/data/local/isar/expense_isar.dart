@@ -14,12 +14,14 @@ class ExpenseIsar {
   late double amount;
   late String currency;
   late String category; // Store as string for flexibility
+  late String type; // Store as string (expense, income, borrow, lend)
 
   late DateTime date;
   late String title;
   String? note;
   String? receiptImageUrl;
   late bool isSynced;
+  late bool isDeleted;
   late DateTime createdAt;
   late DateTime updatedAt;
 
@@ -38,7 +40,12 @@ class ExpenseIsar {
       title: title,
       note: note,
       receiptImageUrl: receiptImageUrl,
+      type: TransactionType.values.firstWhere(
+        (e) => e.name == type,
+        orElse: () => TransactionType.expense,
+      ),
       isSynced: isSynced,
+      isDeleted: isDeleted,
       createdAt: createdAt,
       updatedAt: updatedAt,
     );
@@ -52,11 +59,13 @@ class ExpenseIsar {
       ..amount = expense.amount
       ..currency = expense.currency
       ..category = expense.category.name
+      ..type = expense.type.name
       ..date = expense.date
       ..title = expense.title
       ..note = expense.note
       ..receiptImageUrl = expense.receiptImageUrl
       ..isSynced = expense.isSynced
+      ..isDeleted = expense.isDeleted
       ..createdAt = expense.createdAt
       ..updatedAt = expense.updatedAt;
   }

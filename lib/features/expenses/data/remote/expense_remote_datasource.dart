@@ -28,10 +28,12 @@ class ExpenseRemoteDatasource {
       if (exp.userId.isEmpty) continue; // Do not push guest expenses
 
       final docRef = _expensesRef().doc(exp.id);
-      // Ensure we push data formatted correctly, marking it as synced on the server
-      final data = exp.copyWith(isSynced: true).toJson();
-      // Firestore expects Strings for Iso8601 dates depending on how fromJson/toJson is configured
-      batch.set(docRef, data, SetOptions(merge: true));
+      if (exp.isDeleted) {
+        batch.delete(docRef);
+      } else {
+        final data = exp.copyWith(isSynced: true).toJson();
+        batch.set(docRef, data, SetOptions(merge: true));
+      }
     }
     await batch.commit();
   }

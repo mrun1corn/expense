@@ -6,7 +6,7 @@ final apiKeyProvider = StateNotifierProvider<ApiKeyNotifier, String>((ref) {
 });
 
 class ApiKeyNotifier extends StateNotifier<String> {
-  ApiKeyNotifier() : super('') {
+  ApiKeyNotifier() : super(const String.fromEnvironment('GEMINI_API_KEY')) {
     _loadKey();
   }
 
@@ -14,7 +14,10 @@ class ApiKeyNotifier extends StateNotifier<String> {
 
   Future<void> _loadKey() async {
     final prefs = await SharedPreferences.getInstance();
-    state = prefs.getString(_prefKey) ?? '';
+    final savedKey = prefs.getString(_prefKey);
+    if (savedKey != null) {
+      state = savedKey;
+    }
   }
 
   Future<void> setKey(String key) async {

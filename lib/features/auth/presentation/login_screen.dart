@@ -1,3 +1,4 @@
+import 'package:expense/core/theme/app_theme.dart';
 import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,6 +10,7 @@ class LoginScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     ref.listen<AsyncValue<void>>(
       authControllerProvider,
@@ -24,66 +26,114 @@ class LoginScreen extends ConsumerWidget {
     );
 
     return Scaffold(
+      backgroundColor: AppColors.getBgBase(context),
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
-                  Icons.account_balance_wallet,
-                  size: 100,
-                  color: Colors.deepPurple,
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: AppColors.getBgSunken(context),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.account_balance_wallet_outlined,
+                    size: 80,
+                    color: AppColors.getBrandPrimary(context),
+                  ),
                 ),
                 const SizedBox(height: 32),
                 Text(
-                  'Smart Expense Tracker',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  'AI Expense Tracker',
+                  style: AppTextStyles.displayLg(color: AppColors.getFgPrimary(context)),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
                 Text(
                   'Sign in to sync your expenses and unlock AI insights.',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: Colors.grey[600],
-                  ),
+                  style: AppTextStyles.bodyMd(color: AppColors.getFgSecondary(context)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 48),
                 if (authState.isLoading)
                   const CircularProgressIndicator()
                 else
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 32,
-                        vertical: 16,
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.getBrandPrimary(context),
+                            foregroundColor: isDark ? AppColors.brandFgDark : Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                          ),
+                          icon: const Icon(Icons.login),
+                          label: Text(
+                            'Sign In with Google',
+                            style: AppTextStyles.headingSm(
+                              color: isDark ? AppColors.brandFgDark : Colors.white,
+                            ),
+                          ),
+                          onPressed: () {
+                            ref
+                                .read(authControllerProvider.notifier)
+                                .signInWithGoogle();
+                          },
+                        ),
                       ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: OutlinedButton.icon(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.getFgPrimary(context),
+                            side: BorderSide(
+                              color: isDark ? Colors.white24 : AppColors.getBrandPrimary(context),
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          icon: const Icon(Icons.account_circle_outlined),
+                          label: Text(
+                            'Sign In with Test Account',
+                            style: AppTextStyles.headingSm(
+                              color: AppColors.getFgPrimary(context),
+                            ),
+                          ),
+                          onPressed: () {
+                            ref
+                                .read(authControllerProvider.notifier)
+                                .signInWithMock();
+                          },
+                        ),
                       ),
-                    ),
-                    icon: const Icon(Icons.login),
-                    label: const Text(
-                      'Sign In with Google',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                    onPressed: () {
-                      ref
-                          .read(authControllerProvider.notifier)
-                          .signInWithGoogle();
-                    },
+                    ],
                   ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 16),
                 TextButton(
                   onPressed: () {
-                    // Navigate to home as guest
                     context.go('/');
                   },
-                  child: const Text('Continue as Guest'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: AppColors.getFgSecondary(context),
+                  ),
+                  child: Text(
+                    'Continue as Guest',
+                    style: AppTextStyles.headingSm(color: AppColors.getFgSecondary(context)),
+                  ),
                 ),
               ],
             ),

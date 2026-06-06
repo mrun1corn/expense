@@ -3,6 +3,7 @@ import 'package:expense/features/expenses/data/local/isar/expense_isar.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/notifications/data/local/isar/spending_pattern_isar.dart';
 import 'package:expense/features/notifications/domain/models/spending_pattern.dart';
+import 'package:expense/features/notifications/engine/notification_scheduler.dart';
 import 'package:isar/isar.dart';
 
 enum TimeSlot {
@@ -40,6 +41,7 @@ class PatternDetector {
     final sixtyDaysAgo = DateTime.now().subtract(const Duration(days: 60));
     final expensesIsar = await isar.expenseIsars
         .filter()
+        .isDeletedEqualTo(false)
         .dateGreaterThan(sixtyDaysAgo)
         .findAll();
 
@@ -60,14 +62,57 @@ class PatternDetector {
 
         if (existing != null) {
           // Update occurrences and lastSeen
-          existing.occurrences = pattern.occurrences;
-          existing.lastSeen = pattern.lastSeen;
-          existing.confidence = pattern.confidence;
-          existing.typicalAmount = pattern.typicalAmount;
+          existing
+            ..occurrences = pattern.occurrences
+            ..lastSeen = pattern.lastSeen
+            ..confidence = pattern.confidence
+            ..typicalAmount = pattern.typicalAmount;
           await isar.spendingPatternIsars.put(existing);
         } else {
           final newPattern = SpendingPatternIsar.fromDomain(pattern);
           await isar.spendingPatternIsars.put(newPattern);
+          // Schedule notification for the new pattern
+          await NotificationScheduler.schedulePatternNotification(pattern);
+        }
+      }
+    });
+  }
+
+  static Future<void> runDailyScan() async {
+    final isar = await IsarService.getBackgroundInstance();
+
+    final sixtyDaysAgo = DateTime.now().subtract(const Duration(days: 60));
+    final expensesIsar = await isar.expenseIsars
+        .filter()
+        .isDeletedEqualTo(false)
+        .dateGreaterThan(sixtyDaysAgo)
+        .findAll();
+
+    final expenses = expensesIsar.map<Expense>((e) => e.toDomain()).toList();
+
+    final patterns = await detectAll(expenses);
+
+    await isar.writeTxn(() async {
+      for (final pattern in patterns) {
+        final existing = await isar.spendingPatternIsars
+            .filter()
+            .typeEqualTo(pattern.type.name)
+            .categoryEqualTo(pattern.category.name)
+            .timeSlotHourEqualTo(pattern.timeSlotHour)
+            .findFirst();
+
+        if (existing != null) {
+          existing
+            ..occurrences = pattern.occurrences
+            ..lastSeen = pattern.lastSeen
+            ..confidence = pattern.confidence
+            ..typicalAmount = pattern.typicalAmount;
+          await isar.spendingPatternIsars.put(existing);
+        } else {
+          final newPattern = SpendingPatternIsar.fromDomain(pattern);
+          await isar.spendingPatternIsars.put(newPattern);
+          // Schedule notification
+          await NotificationScheduler.schedulePatternNotification(pattern);
         }
       }
     });

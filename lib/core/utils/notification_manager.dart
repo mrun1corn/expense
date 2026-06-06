@@ -1,13 +1,19 @@
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:expense/features/notifications/engine/action_handlers.dart';
+import 'package:expense/features/notifications/engine/pattern_detector.dart';
 import 'package:flutter/material.dart';
 import 'package:workmanager/workmanager.dart';
 
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
-    // The actual background execution logic will be handled by ActionHandlers
-    return Future.value(true);
+    try {
+      await PatternDetector.runDailyScan();
+      return Future.value(true);
+    } catch (e) {
+      debugPrint('Background scan failed: $e');
+      return Future.value(false);
+    }
   });
 }
 
@@ -115,7 +121,12 @@ class NotificationManager {
   static Future<void> initWorkmanager() async {
     await Workmanager().initialize(
       callbackDispatcher,
-      isInDebugMode: true,
+    );
+    await Workmanager().registerPeriodicTask(
+      'daily_pattern_scan_task',
+      'dailyPatternScanTask',
+      frequency: const Duration(hours: 24),
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.keep,
     );
   }
 }

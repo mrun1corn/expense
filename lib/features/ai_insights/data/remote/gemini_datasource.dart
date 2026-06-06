@@ -1,33 +1,21 @@
+import 'dart:typed_data';
+import 'package:expense/features/ai_insights/domain/models/chat_message.dart';
 import 'package:expense/features/ai_insights/domain/models/gemini_prompts.dart';
+import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-import 'package:google_sign_in/google_sign_in.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
-class _OAuthHttpClient extends http.BaseClient {
-
-  _OAuthHttpClient(this._token);
-  final http.Client _inner = http.Client();
-  final String _token;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) {
-    request.headers['Authorization'] = 'Bearer $_token';
-    return _inner.send(request);
-  }
-}
 
 class GeminiDatasource {
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+
+  GeminiDatasource({required this.apiKey});
+  final String apiKey;
 
   Future<GenerativeModel> _getModel({String? systemInstruction}) async {
     // 1. Check if the user has entered their own API Key locally (Hermes-like flow)
-    final prefs = await SharedPreferences.getInstance();
-    final userKey = prefs.getString('user_gemini_api_key') ?? '';
-    if (userKey.isNotEmpty) {
+    if (apiKey.isNotEmpty) {
       return GenerativeModel(
-        model: 'gemini-1.5-flash',
-        apiKey: userKey,
+        model: 'gemini-2.5-flash',
+        apiKey: apiKey,
         systemInstruction: systemInstruction != null
             ? Content.system(systemInstruction)
             : null,
@@ -38,32 +26,15 @@ class GeminiDatasource {
     const staticKey = String.fromEnvironment('GEMINI_API_KEY');
     if (staticKey.isNotEmpty) {
       return GenerativeModel(
-        model: 'gemini-1.5-flash',
+        model: 'gemini-2.5-flash',
         apiKey: staticKey,
         systemInstruction: systemInstruction != null
             ? Content.system(systemInstruction)
             : null,
       );
     }
-
-    // 3. Fallback to OAuth Bearer Token if no static key is provided
-    final googleUser = _googleSignIn.currentUser;
-    if (googleUser == null) throw Exception('User not signed in');
-
-    final auth = await googleUser.authentication;
-    final token = auth.accessToken;
-    if (token == null) throw Exception('Failed to get OAuth token');
-
-    final httpClient = _OAuthHttpClient(token);
-
-    return GenerativeModel(
-      model: 'gemini-1.5-flash',
-      apiKey: '',
-      httpClient: httpClient,
-      systemInstruction: systemInstruction != null
-          ? Content.system(systemInstruction)
-          : null,
-    );
+    // 3. Throw exception if no key provided
+    throw Exception('Gemini API key is required. Please set it in Settings.');
   }
 
   Future<String> predictCategory(String title) async {
@@ -76,6 +47,26 @@ class GeminiDatasource {
     } catch (e) {
       print(r'Auto-categorize failed: $e');
       return 'other';
+    }
+  }
+
+  Future<String> analyzeReceiptImage(Uint8List imageBytes, String mimeType) async {
+    try {
+      final model = await _getModel();
+      final response = await model.generateContent([
+        Content.multi([
+          TextPart('Analyze this receipt image. Extract: '
+              '1. Vendor/store name (under "title" field) '
+              '2. Total amount charged (under "amount" field as a float/double) '
+              '3. Main category of purchases (under "category" field, matching one of these values: food, transport, utilities, entertainment, shopping, health, education, other). '
+              'Return ONLY a clean JSON object containing keys: "title", "amount", "category". Do not include markdown code block formatting or explanations. Just raw JSON.'),
+          DataPart(mimeType, imageBytes),
+        ]),
+      ]);
+      return response.text?.trim() ?? '{}';
+    } catch (e) {
+      print('Gemini analyzeReceiptImage error: $e');
+      rethrow;
     }
   }
 
@@ -107,15 +98,44 @@ class GeminiDatasource {
     }
   }
 
-  Future<String> sendChat(String message) async {
+  Future<String> sendChat(
+    String message,
+    List<ChatMessage> history,
+    List<Expense> expenses,
+  ) async {
     try {
       final model = await _getModel(
-        systemInstruction: GeminiPrompts.systemChatPrompt,
+        systemInstruction: GeminiPrompts.systemChatPromptWithExpenses(expenses),
       );
-      final response = await model.generateContent([Content.text(message)]);
+      
+      // Limit history passed to Gemini to prevent exceeding context limits/cost
+      final recentHistory = history.length > 20
+          ? history.sublist(history.length - 20)
+          : history;
+
+      final cleanHistory = <Content>[];
+      var expectedRole = 'user';
+      for (final msg in recentHistory) {
+        final role = msg.isUser ? 'user' : 'model';
+        if (role == expectedRole) {
+          cleanHistory.add(Content(role, [TextPart(msg.text)]));
+          expectedRole = role == 'user' ? 'model' : 'user';
+        }
+      }
+
+      // The history passed to startChat must end with 'model' so that
+      // the next message sent by sendMessage (which is 'user') alternates correctly.
+      if (cleanHistory.isNotEmpty && cleanHistory.last.role == 'user') {
+        cleanHistory.removeLast();
+      }
+
+      final chat = model.startChat(history: cleanHistory);
+
+      final response = await chat.sendMessage(Content.text(message));
       return response.text?.trim() ?? 'I could not understand that.';
     } catch (e) {
-      return 'Sorry, I am having trouble connecting right now.';
+      print('Gemini sendChat error: $e');
+      rethrow;
     }
   }
 

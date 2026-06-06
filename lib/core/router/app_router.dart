@@ -6,6 +6,8 @@ import 'package:expense/features/auth/presentation/profile_screen.dart';
 import 'package:expense/features/budgets/presentation/screens/budget_screen.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/screens/add_expense_screen.dart';
+import 'package:expense/features/expenses/presentation/screens/lend_borrow_screen.dart';
+import 'package:expense/features/expenses/presentation/screens/rent_tracker_screen.dart';
 import 'package:expense/features/home/presentation/screens/main_shell_screen.dart';
 import 'package:expense/features/settings/presentation/screens/notification_settings_screen.dart';
 import 'package:flutter/material.dart';
@@ -106,6 +108,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           child: const BudgetScreen(),
         ),
       ),
+      GoRoute(
+        path: '/rent-tracker',
+        pageBuilder: (context, state) => _buildPageWithSlideTransition(
+          context: context,
+          state: state,
+          child: const RentTrackerScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/lend-borrow',
+        pageBuilder: (context, state) => _buildPageWithSlideTransition(
+          context: context,
+          state: state,
+          child: const LendBorrowScreen(),
+        ),
+      ),
     ],
   );
 });
@@ -146,4 +164,4 @@ CustomTransitionPage<void> _buildPageWithSlideTransition({
       );
     },
   );
-}
+}

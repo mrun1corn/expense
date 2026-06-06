@@ -59,6 +59,10 @@ dependencies:
   url_launcher: ^6.3.2
 
   http: any
+  csv: ^8.0.0
+  share_plus: ^13.1.0
+  image_picker: ^1.1.2
+  path: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -39,5 +39,12 @@ const _$ExpenseCategoryEnumMap = {
   ExpenseCategory.shopping: 'shopping',
   ExpenseCategory.health: 'health',
   ExpenseCategory.education: 'education',
+  ExpenseCategory.salary: 'salary',
+  ExpenseCategory.business: 'business',
+  ExpenseCategory.investment: 'investment',
+  ExpenseCategory.gift: 'gift',
+  ExpenseCategory.friend: 'friend',
+  ExpenseCategory.bank: 'bank',
+  ExpenseCategory.family: 'family',
   ExpenseCategory.other: 'other',
 };

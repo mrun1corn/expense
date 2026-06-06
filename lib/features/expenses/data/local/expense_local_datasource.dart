@@ -10,7 +10,8 @@ class ExpenseLocalDatasource {
   // Watches all expenses sorted by date descending in real-time
   Stream<List<Expense>> watchAll() {
     return _isar.expenseIsars
-        .where()
+        .filter()
+        .isDeletedEqualTo(false)
         .sortByDateDesc()
         .watch(fireImmediately: true)
         .map((list) => list.map<Expense>((e) => e.toDomain()).toList());
@@ -38,15 +39,21 @@ class ExpenseLocalDatasource {
     }
   }
 
-  // Deletes an expense by its UUID id
+  // Deletes an expense by its UUID id (Soft-delete!)
   Future<void> delete(String id) async {
     final existing = await _isar.expenseIsars
         .filter()
         .idEqualTo(id)
         .findFirst();
     if (existing != null) {
+      final updated = existing.toDomain().copyWith(
+        isDeleted: true,
+        isSynced: false,
+        updatedAt: DateTime.now(),
+      );
+      final expenseIsar = ExpenseIsar.fromDomain(updated)..isarId = existing.isarId;
       await _isar.writeTxn(() async {
-        await _isar.expenseIsars.delete(existing.isarId);
+        await _isar.expenseIsars.put(expenseIsar);
       });
     }
   }
@@ -60,6 +67,7 @@ class ExpenseLocalDatasource {
     ).subtract(const Duration(milliseconds: 1));
     final results = await _isar.expenseIsars
         .filter()
+        .isDeletedEqualTo(false)
         .dateBetween(start, end)
         .sortByDateDesc()
         .findAll();
@@ -71,6 +79,7 @@ class ExpenseLocalDatasource {
     final cutoff = DateTime.now().subtract(const Duration(days: 60));
     final results = await _isar.expenseIsars
         .filter()
+        .isDeletedEqualTo(false)
         .dateGreaterThan(cutoff)
         .sortByDateDesc()
         .findAll();
@@ -89,13 +98,14 @@ class ExpenseLocalDatasource {
   // Fetches the most recently updated expense
   Future<Expense?> getLatestExpense() async {
     final result = await _isar.expenseIsars
-        .where()
+        .filter()
+        .isDeletedEqualTo(false)
         .sortByUpdatedAtDesc()
         .findFirst();
     return result?.toDomain();
   }
 
-  // Saves a batch of expenses
+  // Saves a batch of expenses (LWW implementation)
   Future<void> saveExpenses(List<Expense> expenses) async {
     await _isar.writeTxn(() async {
       for (final e in expenses) {
@@ -103,11 +113,67 @@ class ExpenseLocalDatasource {
             .filter()
             .idEqualTo(e.id)
             .findFirst();
+        
+        if (existing != null) {
+          // LWW Check: Do not overwrite if local record is newer
+          if (e.updatedAt.isBefore(existing.updatedAt)) {
+            continue;
+          }
+        }
+        
         final isarObj = ExpenseIsar.fromDomain(e);
         if (existing != null) {
           isarObj.isarId = existing.isarId;
         }
         await _isar.expenseIsars.put(isarObj);
+      }
+    });
+  }
+
+  // Purges successfully synced soft-deleted records, and marks others as synced
+  Future<void> purgeDeletedAndMarkSynced(List<Expense> expenses) async {
+    await _isar.writeTxn(() async {
+      for (final e in expenses) {
+        final existing = await _isar.expenseIsars
+            .filter()
+            .idEqualTo(e.id)
+            .findFirst();
+        if (existing != null) {
+          if (e.isDeleted) {
+            await _isar.expenseIsars.delete(existing.isarId); // Purge!
+          } else {
+            final updated = existing.toDomain().copyWith(isSynced: true);
+            final isarObj = ExpenseIsar.fromDomain(updated)..isarId = existing.isarId;
+            await _isar.expenseIsars.put(isarObj); // Mark synced
+          }
+        }
+      }
+    });
+  }
+
+  // Reconciles synced expenses by deleting local records that are no longer present on remote
+  Future<void> reconcileSyncedExpenses(String userId, List<String> remoteIds) async {
+    if (userId.isEmpty) return;
+    
+    await _isar.writeTxn(() async {
+      // Find all local expenses for this user that are marked synced
+      final localSynced = await _isar.expenseIsars
+          .filter()
+          .userIdEqualTo(userId)
+          .isSyncedEqualTo(true)
+          .findAll();
+          
+      final remoteIdsSet = remoteIds.toSet();
+      final toDelete = <int>[];
+      
+      for (final local in localSynced) {
+        if (!remoteIdsSet.contains(local.id)) {
+          toDelete.add(local.isarId);
+        }
+      }
+      
+      if (toDelete.isNotEmpty) {
+        await _isar.expenseIsars.deleteAll(toDelete);
       }
     });
   }
@@ -119,6 +185,7 @@ class ExpenseLocalDatasource {
   ) async {
     final results = await _isar.expenseIsars
         .filter()
+        .isDeletedEqualTo(false)
         .dateBetween(from, to)
         .findAll();
 

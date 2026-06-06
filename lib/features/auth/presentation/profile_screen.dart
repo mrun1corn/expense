@@ -1,3 +1,4 @@
+import 'package:expense/core/theme/app_theme.dart';
 import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,7 +17,7 @@ class ProfileScreen extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Authentication error: $error'),
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: AppColors.getDanger(context),
             ),
           );
         },
@@ -24,6 +25,7 @@ class ProfileScreen extends ConsumerWidget {
     });
 
     return Scaffold(
+      backgroundColor: AppColors.getBgBase(context),
       appBar: AppBar(
         title: const Text('Profile'),
       ),
@@ -34,47 +36,73 @@ class ProfileScreen extends ConsumerWidget {
           }
 
           return ListView(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(24),
             children: [
-              if (user.photoUrl != null)
-                CircleAvatar(
-                  radius: 50,
-                  backgroundImage: NetworkImage(user.photoUrl!),
-                )
-              else
-                const CircleAvatar(
-                  radius: 50,
-                  child: Icon(Icons.person, size: 50),
+              Center(
+                child: Stack(
+                  children: [
+                    if (user.photoUrl != null)
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundImage: NetworkImage(user.photoUrl!),
+                      )
+                    else
+                      CircleAvatar(
+                        radius: 50,
+                        backgroundColor: AppColors.getBgSunken(context),
+                        child: Icon(
+                          Icons.person,
+                          size: 50,
+                          color: AppColors.getFgSecondary(context),
+                        ),
+                      ),
+                  ],
                 ),
-              const SizedBox(height: 16),
+              ),
+              const SizedBox(height: 24),
               Text(
                 user.displayName,
-                style: Theme.of(context).textTheme.headlineSmall,
+                style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 4),
               Text(
                 user.email,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey,
-                ),
+                style: AppTextStyles.bodyMd(color: AppColors.getFgSecondary(context)),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 32),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
-                  foregroundColor: Colors.white,
+              const SizedBox(height: 48),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.getDanger(context),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
+                  onPressed: () {
+                    ref.read(authControllerProvider.notifier).signOut();
+                  },
+                  child: Text(
+                    'Sign Out',
+                    style: AppTextStyles.headingSm(color: Colors.white),
+                  ),
                 ),
-                onPressed: () {
-                  ref.read(authControllerProvider.notifier).signOut();
-                },
-                child: const Text('Sign Out'),
               ),
             ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, _) => Center(child: Text('Error loading profile: $e')),
+        error: (e, _) => Center(
+          child: Text(
+            'Error loading profile: $e',
+            style: AppTextStyles.bodyMd(color: AppColors.getDanger(context)),
+          ),
+        ),
       ),
     );
   }
@@ -87,6 +115,7 @@ class _GuestProfileView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState.isLoading;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -95,126 +124,106 @@ class _GuestProfileView extends ConsumerWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Premium M3 Gradient Sync Card
-              Card(
-                elevation: 6,
-                shadowColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(24),
-                    gradient: LinearGradient(
-                      colors: [
-                        Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
-                        Theme.of(context).colorScheme.surface,
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
+              Container(
+                decoration: AppShadows.getCardDecoration(context, radius: 24),
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.getBrandAccent(context),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.cloud_sync_rounded,
+                        size: 64,
+                        color: AppColors.getBrandPrimary(context),
+                      ),
                     ),
-                    border: Border.all(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      width: 1.5,
+                    const SizedBox(height: 24),
+                    Text(
+                      'Secure Cloud Sync',
+                      style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
                     ),
-                  ),
-                  padding: const EdgeInsets.all(28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.cloud_sync_rounded,
-                          size: 64,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Back up your data, sync settings, and manage personal keys across all your devices securely.',
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.bodyMd(color: AppColors.getFgSecondary(context)).copyWith(
+                        height: 1.4,
                       ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Secure Cloud Sync',
-                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: -0.5,
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Back up your data, sync settings, and manage personal keys across all your devices securely.',
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.grey.shade600,
-                              height: 1.3,
-                            ),
-                      ),
-                      const SizedBox(height: 24),
-                      Divider(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.5)),
-                      const SizedBox(height: 16),
-                      _buildBenefitItem(
-                        context,
-                        Icons.cloud_upload_rounded,
-                        'Auto-Sync Expenses',
-                        'Your local expenses sync to Firebase instantly.',
-                      ),
-                      _buildBenefitItem(
-                        context,
-                        Icons.key_rounded,
-                        'API Key Portability',
-                        'Restore your personal Gemini key on any device.',
-                      ),
-                      _buildBenefitItem(
-                        context,
-                        Icons.devices_rounded,
-                        'Multi-Device Support',
-                        'Access the same dashboard from Web, iOS, and Android.',
-                      ),
-                      const SizedBox(height: 28),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                    ),
+                    const SizedBox(height: 24),
+                    Divider(
+                      color: isDark ? const Color(0x12FFFFFF) : const Color(0x0F000000),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildBenefitItem(
+                      context,
+                      Icons.cloud_upload_rounded,
+                      'Auto-Sync Expenses',
+                      'Your local expenses sync to Firebase instantly.',
+                    ),
+                    _buildBenefitItem(
+                      context,
+                      Icons.key_rounded,
+                      'API Key Portability',
+                      'Restore your personal Gemini key on any device.',
+                    ),
+                    _buildBenefitItem(
+                      context,
+                      Icons.devices_rounded,
+                      'Multi-Device Support',
+                      'Access the same dashboard from Web, iOS, and Android.',
+                    ),
+                    const SizedBox(height: 28),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.getBrandPrimary(context),
+                          foregroundColor: isDark ? AppColors.brandFgDark : Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                          onPressed: isLoading
-                              ? null
-                              : () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
-                          child: isLoading
-                              ? const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2.5,
-                                    valueColor: AlwaysStoppedAnimation(Colors.white),
-                                  ),
-                                )
-                              : Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Icon(Icons.login_rounded),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      'Sign In with Google',
-                                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                            color: Theme.of(context).colorScheme.onPrimary,
-                                            fontWeight: FontWeight.bold,
-                                          ),
-                                    ),
-                                  ],
-                                ),
                         ),
+                        onPressed: isLoading
+                            ? null
+                            : () => ref.read(authControllerProvider.notifier).signInWithGoogle(),
+                        child: isLoading
+                            ? SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    isDark ? AppColors.brandFgDark : Colors.white,
+                                  ),
+                                ),
+                              )
+                            : Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.login_rounded,
+                                    color: isDark ? AppColors.brandFgDark : Colors.white,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Sign In with Google',
+                                    style: AppTextStyles.headingSm(
+                                      color: isDark ? AppColors.brandFgDark : Colors.white,
+                                    ),
+                                  ),
+                                ],
+                              ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -238,7 +247,7 @@ class _GuestProfileView extends ConsumerWidget {
           Icon(
             icon,
             size: 20,
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+            color: AppColors.getBrandPrimary(context),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -247,15 +256,12 @@ class _GuestProfileView extends ConsumerWidget {
               children: [
                 Text(
                   title,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                  style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
                 ),
+                const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Colors.grey.shade600,
-                      ),
+                  style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
                 ),
               ],
             ),
@@ -265,4 +271,3 @@ class _GuestProfileView extends ConsumerWidget {
     );
   }
 }
-

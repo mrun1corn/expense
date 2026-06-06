@@ -24,6 +24,9 @@ final activeCloudSyncProvider = Provider<void>((ref) {
           .toList();
       await local.saveExpenses(syncedRemote);
     }
+    // Reconcile deleted expenses
+    final remoteIds = remoteExpenses.map((e) => e.id).toList();
+    await local.reconcileSyncedExpenses(currentUser.id, remoteIds);
   });
 
   ref.onDispose(sub.cancel);

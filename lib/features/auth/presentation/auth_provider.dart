@@ -35,6 +35,16 @@ class AuthController extends StateNotifier<AsyncValue<void>> {
     }
   }
 
+  Future<void> signInWithMock() async {
+    state = const AsyncValue.loading();
+    try {
+      await _repository.signInWithMock();
+      state = const AsyncValue.data(null);
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
   Future<void> signOut() async {
     state = const AsyncValue.loading();
     try {
