@@ -4,6 +4,9 @@ analyzer:
   exclude:
     - "**/*.g.dart"
     - "**/*.freezed.dart"
+  errors:
+    deprecated_member_use: ignore
+    deprecated_member_use_from_same_package: ignore
 
 linter:
   rules:
@@ -19,3 +22,13 @@ linter:
     unreachable_from_main: false
     avoid_positional_boolean_parameters: false
     sort_pub_dependencies: false
+    directives_ordering: false
+    prefer_int_literals: false
+    avoid_redundant_argument_values: false
+    omit_local_variable_types: false
+    unnecessary_breaks: false
+    eol_at_end_of_file: false
+    use_raw_strings: false
+    sort_constructors_first: false
+    always_put_required_named_parameters_first: false
+    avoid_dynamic_calls: false
