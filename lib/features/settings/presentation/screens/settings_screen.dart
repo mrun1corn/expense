@@ -7,7 +7,9 @@ import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
 import 'package:expense/features/settings/presentation/providers/settings_provider.dart';
+import 'package:expense/core/payment/payment_systems_manager.dart';
 import 'package:flutter/material.dart';
+import 'package:expense/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:path_provider/path_provider.dart';
@@ -90,7 +92,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.getBgBase(context),
       appBar: AppBar(
-        title: const Text('Settings'),
+        title: Text(AppLocalizations.of(context)!.settings),
       ),
       body: ListView(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -284,7 +286,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.brightness_6_outlined),
               title: Text(
-                'Theme',
+                AppLocalizations.of(context)!.theme,
                 style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
               ),
               trailing: DropdownButton<ThemeMode>(
@@ -308,29 +310,41 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
           ),
 
-          // Currency Selector
+          // Region & Currency Selector
           Container(
             decoration: AppShadows.getCardDecoration(context, radius: 12),
             margin: const EdgeInsets.only(bottom: 12),
             child: ListTile(
-              leading: const Icon(Icons.attach_money_outlined),
+              leading: const Icon(Icons.public_outlined),
               title: Text(
-                'Currency',
+                'Region & Currency',
                 style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
               ),
+              subtitle: Text(
+                'Country setting for currency & payment systems',
+                style: AppTextStyles.caption(color: AppColors.getFgSecondary(context)),
+              ),
               trailing: DropdownButton<String>(
-                value: ref.watch(currencyProvider),
+                value: ref.watch(countryCodeProvider),
                 underline: const SizedBox(),
                 onChanged: (newValue) {
                   if (newValue != null) {
-                    ref.read(currencyProvider.notifier).setCurrency(newValue);
+                    ref.read(countryCodeProvider.notifier).setCountry(newValue);
+                    final countryData = PaymentSystemsManager.getCountryData(newValue);
+                    if (countryData != null) {
+                      ref.read(currencyProvider.notifier).setCurrency(countryData.currencyCode);
+                    }
                   }
                 },
-                items: <String>['USD', 'EUR', 'GBP'].map<DropdownMenuItem<String>>((value) {
+                items: PaymentSystemsManager.getSupportedCountries()
+                    .map<DropdownMenuItem<String>>((map) {
+                  final code = map['code']!;
+                  final countryData = PaymentSystemsManager.getCountryData(code);
+                  final currencySuffix = countryData != null ? ' (${countryData.currencyCode})' : '';
                   return DropdownMenuItem<String>(
-                    value: value,
+                    value: code,
                     child: Text(
-                      value,
+                      '${map['name']}$currencySuffix',
                       style: AppTextStyles.bodySm(color: AppColors.getFgPrimary(context)),
                     ),
                   );
@@ -346,7 +360,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.download_outlined),
               title: Text(
-                'Export Data (CSV)',
+                AppLocalizations.of(context)!.exportCsv,
                 style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
               ),
               onTap: () async {
@@ -404,7 +418,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.notifications_outlined),
               title: Text(
-                'Smart Notifications',
+                AppLocalizations.of(context)!.smartNotifications,
                 style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
               ),
               trailing: const Icon(Icons.chevron_right),
@@ -420,7 +434,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             child: ListTile(
               leading: const Icon(Icons.person_outline),
               title: Text(
-                'Profile & Sync',
+                AppLocalizations.of(context)!.profileSync,
                 style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
               ),
               trailing: const Icon(Icons.chevron_right),

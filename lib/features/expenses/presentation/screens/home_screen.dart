@@ -1,11 +1,15 @@
 import 'package:expense/core/theme/app_theme.dart';
+import 'package:expense/core/payment/payment_systems_manager.dart';
 import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:expense/features/budgets/presentation/providers/budget_provider.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:expense/features/expenses/presentation/providers/sync_provider.dart';
 import 'package:expense/features/home/presentation/screens/main_shell_screen.dart';
+import 'package:expense/core/extensions/double_ext.dart';
+import 'package:expense/features/settings/presentation/providers/settings_provider.dart';
 import 'package:flutter/material.dart';
+import 'package:expense/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
@@ -83,6 +87,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return name[0].toUpperCase() + name.substring(1);
   }
 
+  Widget _buildPaymentSystemBadge(BuildContext context, String systemName) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final type = PaymentSystemsManager.getSystemTypeColor(systemName);
+
+    Color bg;
+    Color fg;
+
+    switch (type) {
+      case 'mfs':
+        bg = isDark ? const Color(0xFF085041) : const Color(0xFFE1F5EE);
+        fg = isDark ? const Color(0xFF9FE1CB) : const Color(0xFF0F6E56);
+        break;
+      case 'rtp':
+        bg = isDark ? const Color(0xFF0C447C) : const Color(0xFFE6F1FB);
+        fg = isDark ? const Color(0xFFB5D4F4) : const Color(0xFF185FA5);
+        break;
+      case 'wallet':
+        bg = isDark ? const Color(0xFF3C3489) : const Color(0xFFEEEDFE);
+        fg = isDark ? const Color(0xFFCECBF6) : const Color(0xFF534AB7);
+        break;
+      case 'bank':
+        bg = isDark ? const Color(0xFF633806) : const Color(0xFFFAEEDA);
+        fg = isDark ? const Color(0xFFFAC775) : const Color(0xFF854F0B);
+        break;
+      case 'neo':
+        bg = isDark ? const Color(0xFF712B13) : const Color(0xFFFAECE7);
+        fg = isDark ? const Color(0xFFF5C4B3) : const Color(0xFF993C1D);
+        break;
+      case 'card':
+        bg = isDark ? const Color(0xFF27500A) : const Color(0xFFEAF3DE);
+        fg = isDark ? const Color(0xFFC0DD97) : const Color(0xFF3B6D11);
+        break;
+      case 'cbdc':
+        bg = isDark ? const Color(0xFF72243E) : const Color(0xFFFBEAF0);
+        fg = isDark ? const Color(0xFFF4C0D1) : const Color(0xFF993556);
+        break;
+      default:
+        bg = isDark ? const Color(0xFF444441) : const Color(0xFFF1EFE8);
+        fg = isDark ? const Color(0xFFD3D1C7) : const Color(0xFF5F5E5A);
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      child: Text(
+        systemName,
+        style: TextStyle(
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+          color: fg,
+        ),
+      ),
+    );
+  }
+
   void _deleteExpense(WidgetRef ref, Expense exp) {
     ref.read(expenseRepositoryProvider).deleteExpense(exp.id);
     ScaffoldMessenger.of(context).showSnackBar(
@@ -112,6 +174,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final rentSettings = ref.watch(rentSettingsProvider);
     final rentAmount = rentSettings.amount;
     final dueDay = rentSettings.dueDay;
+    final currencyCode = ref.watch(currencyProvider);
 
     return Scaffold(
       backgroundColor: AppColors.getBgBase(context),
@@ -151,7 +214,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                 final daysRemaining = nextDueDate.difference(now).inDays;
                 final displayRemaining = daysRemaining <= 0 ? 'Due today' : '$daysRemaining days';
-                final displaySub = '${DateFormat('MMM d').format(nextDueDate)} - \$${rentAmount.toStringAsFixed(0)}';
+                final displaySub = '${DateFormat('MMM d').format(nextDueDate)} - ${rentAmount.toCurrencySymbol(currencyCode)}${rentAmount.toStringAsFixed(0)}';
 
                 final totalIncome = thisMonthExpenses
                     .where((e) => e.type == TransactionType.income)
@@ -256,12 +319,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'TOTAL SPENT',
+                                      AppLocalizations.of(context)!.totalSpent.toUpperCase(),
                                       style: AppTextStyles.overline(color: AppColors.getHeroFgMuted(context)),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      '\$${totalExpenses.toStringAsFixed(2)}',
+                                      totalExpenses.toCurrencyString(currencyCode),
                                       style: AppTextStyles.monospace(
                                         32,
                                         color: AppColors.getHeroFg(context),
@@ -270,7 +333,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                     const SizedBox(height: 4),
                                     Text(
-                                      'of \$${totalBudgetLimit.toStringAsFixed(0)} budget',
+                                      'of ${totalBudgetLimit.toCurrencySymbol(currencyCode)}${totalBudgetLimit.toStringAsFixed(0)} budget',
                                       style: AppTextStyles.bodySm(color: AppColors.getHeroFgMuted(context)),
                                     ),
                                     const SizedBox(height: 20),
@@ -296,15 +359,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          r'$0',
+                                          '${0.0.toCurrencySymbol(currencyCode)}0',
                                           style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
                                         ),
                                         Text(
-                                          r'$' '${remaining.toStringAsFixed(0)} left',
+                                          '${remaining.toCurrencySymbol(currencyCode)}${remaining.toStringAsFixed(0)} left',
                                           style: AppTextStyles.captionBold(color: AppColors.getHeroFg(context)),
                                         ),
                                         Text(
-                                          r'$' '${totalBudgetLimit.toStringAsFixed(0)}',
+                                          '${totalBudgetLimit.toCurrencySymbol(currencyCode)}${totalBudgetLimit.toStringAsFixed(0)}',
                                           style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
                                         ),
                                       ],
@@ -365,7 +428,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                       children: [
                                         Text(
-                                          'SAVED',
+                                          AppLocalizations.of(context)!.saved.toUpperCase(),
                                           style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                                         ),
                                         Icon(Icons.savings_outlined, size: 16, color: AppColors.getFgTertiary(context)),
@@ -373,7 +436,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      '\$${netSaved.toStringAsFixed(0)}',
+                                      '${netSaved.toCurrencySymbol(currencyCode)}${netSaved.toStringAsFixed(0)}',
                                       style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
                                     ),
                                     const SizedBox(height: 4),
@@ -399,7 +462,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
                                           Text(
-                                            'RENT DUE',
+                                            AppLocalizations.of(context)!.rentDue.toUpperCase(),
                                             style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                                           ),
                                           Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.getFgTertiary(context)),
@@ -433,7 +496,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'SPENDING BREAKDOWN',
+                              AppLocalizations.of(context)!.spendingBreakdown.toUpperCase(),
                               style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                             ),
                             GestureDetector(
@@ -540,7 +603,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              'RECENT TRANSACTIONS',
+                              AppLocalizations.of(context)!.recentTransactions.toUpperCase(),
                               style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                             ),
                             GestureDetector(
@@ -579,7 +642,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 final exp = recentThree[index];
                                 final isExpense = exp.type == TransactionType.expense;
                                 final isIncome = exp.type == TransactionType.income;
-                                final prefix = isIncome ? r'+$' : (isExpense ? r'-$' : r'$');
+                                final symbol = 0.0.toCurrencySymbol(currencyCode);
+                                final prefix = isIncome ? '+$symbol' : (isExpense ? '-$symbol' : symbol);
                                 final amountColor = isIncome
                                     ? AppColors.getSuccess(context)
                                     : (isExpense ? AppColors.getFgPrimary(context) : AppColors.getBrandPrimary(context));
@@ -616,9 +680,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                             size: 18,
                                           ),
                                         ),
-                                        title: Text(
-                                          exp.title,
-                                          style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
+                                        title: Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                exp.title,
+                                                style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ),
+                                            if (exp.paymentSystem != null) ...[
+                                              const SizedBox(width: 8),
+                                              _buildPaymentSystemBadge(context, exp.paymentSystem!),
+                                            ],
+                                          ],
                                         ),
                                         subtitle: Text(
                                           '${_formatEnumName(exp.category.name)} · ${DateFormat('h:mm a').format(exp.date)}',
@@ -675,7 +750,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                     Text(
                                       totalExpenses > totalBudgetLimit * 0.8
                                           ? 'You have spent ${(percent * 100).toStringAsFixed(0)}% of your monthly budget. Consider limiting non-essential shopping to avoid exceeding limits.'
-                                          : 'Your monthly spending is well optimized. You have saved \$${netSaved.toStringAsFixed(0)} so far. Keep it up!',
+                                          : 'Your monthly spending is well optimized. You have saved ${netSaved.toCurrencySymbol(currencyCode)}${netSaved.toStringAsFixed(0)} so far. Keep it up!',
                                       style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
                                     ),
                                   ],
@@ -707,7 +782,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               elevation: 1,
                             ),
                             child: Text(
-                              '+ Add Transaction',
+                              AppLocalizations.of(context)!.addTransaction,
                               style: AppTextStyles.headingSm(
                                 color: isDark ? AppColors.brandFgDark : Colors.white,
                               ),

@@ -47,6 +47,7 @@ class Expense with _$Expense {
     required String title,
     required DateTime createdAt,
     required DateTime updatedAt,
+    String? paymentSystem,
     String? note,
     String? receiptImageUrl,
     @Default(TransactionType.expense) TransactionType type,

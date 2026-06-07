@@ -62,28 +62,33 @@ const ExpenseIsarSchema = CollectionSchema(
       name: r'note',
       type: IsarType.string,
     ),
-    r'receiptImageUrl': PropertySchema(
+    r'paymentSystem': PropertySchema(
       id: 9,
+      name: r'paymentSystem',
+      type: IsarType.string,
+    ),
+    r'receiptImageUrl': PropertySchema(
+      id: 10,
       name: r'receiptImageUrl',
       type: IsarType.string,
     ),
     r'title': PropertySchema(
-      id: 10,
+      id: 11,
       name: r'title',
       type: IsarType.string,
     ),
     r'type': PropertySchema(
-      id: 11,
+      id: 12,
       name: r'type',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 12,
+      id: 13,
       name: r'updatedAt',
       type: IsarType.dateTime,
     ),
     r'userId': PropertySchema(
-      id: 13,
+      id: 14,
       name: r'userId',
       type: IsarType.string,
     )
@@ -132,6 +137,12 @@ int _expenseIsarEstimateSize(
     }
   }
   {
+    final value = object.paymentSystem;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
     final value = object.receiptImageUrl;
     if (value != null) {
       bytesCount += 3 + value.length * 3;
@@ -158,11 +169,12 @@ void _expenseIsarSerialize(
   writer.writeBool(offsets[6], object.isDeleted);
   writer.writeBool(offsets[7], object.isSynced);
   writer.writeString(offsets[8], object.note);
-  writer.writeString(offsets[9], object.receiptImageUrl);
-  writer.writeString(offsets[10], object.title);
-  writer.writeString(offsets[11], object.type);
-  writer.writeDateTime(offsets[12], object.updatedAt);
-  writer.writeString(offsets[13], object.userId);
+  writer.writeString(offsets[9], object.paymentSystem);
+  writer.writeString(offsets[10], object.receiptImageUrl);
+  writer.writeString(offsets[11], object.title);
+  writer.writeString(offsets[12], object.type);
+  writer.writeDateTime(offsets[13], object.updatedAt);
+  writer.writeString(offsets[14], object.userId);
 }
 
 ExpenseIsar _expenseIsarDeserialize(
@@ -182,11 +194,12 @@ ExpenseIsar _expenseIsarDeserialize(
   object.isSynced = reader.readBool(offsets[7]);
   object.isarId = id;
   object.note = reader.readStringOrNull(offsets[8]);
-  object.receiptImageUrl = reader.readStringOrNull(offsets[9]);
-  object.title = reader.readString(offsets[10]);
-  object.type = reader.readString(offsets[11]);
-  object.updatedAt = reader.readDateTime(offsets[12]);
-  object.userId = reader.readString(offsets[13]);
+  object.paymentSystem = reader.readStringOrNull(offsets[9]);
+  object.receiptImageUrl = reader.readStringOrNull(offsets[10]);
+  object.title = reader.readString(offsets[11]);
+  object.type = reader.readString(offsets[12]);
+  object.updatedAt = reader.readDateTime(offsets[13]);
+  object.userId = reader.readString(offsets[14]);
   return object;
 }
 
@@ -218,12 +231,14 @@ P _expenseIsarDeserializeProp<P>(
     case 9:
       return (reader.readStringOrNull(offset)) as P;
     case 10:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 11:
       return (reader.readString(offset)) as P;
     case 12:
-      return (reader.readDateTime(offset)) as P;
+      return (reader.readString(offset)) as P;
     case 13:
+      return (reader.readDateTime(offset)) as P;
+    case 14:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -1220,6 +1235,160 @@ extension ExpenseIsarQueryFilter
   }
 
   QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'paymentSystem',
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'paymentSystem',
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'paymentSystem',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'paymentSystem',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'paymentSystem',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'paymentSystem',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'paymentSystem',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'paymentSystem',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'paymentSystem',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'paymentSystem',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'paymentSystem',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
+      paymentSystemIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'paymentSystem',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterFilterCondition>
       receiptImageUrlIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -1943,6 +2112,19 @@ extension ExpenseIsarQuerySortBy
     });
   }
 
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterSortBy> sortByPaymentSystem() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentSystem', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterSortBy>
+      sortByPaymentSystemDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentSystem', Sort.desc);
+    });
+  }
+
   QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterSortBy> sortByReceiptImageUrl() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'receiptImageUrl', Sort.asc);
@@ -2127,6 +2309,19 @@ extension ExpenseIsarQuerySortThenBy
     });
   }
 
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterSortBy> thenByPaymentSystem() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentSystem', Sort.asc);
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterSortBy>
+      thenByPaymentSystemDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'paymentSystem', Sort.desc);
+    });
+  }
+
   QueryBuilder<ExpenseIsar, ExpenseIsar, QAfterSortBy> thenByReceiptImageUrl() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'receiptImageUrl', Sort.asc);
@@ -2249,6 +2444,14 @@ extension ExpenseIsarQueryWhereDistinct
     });
   }
 
+  QueryBuilder<ExpenseIsar, ExpenseIsar, QDistinct> distinctByPaymentSystem(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'paymentSystem',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<ExpenseIsar, ExpenseIsar, QDistinct> distinctByReceiptImageUrl(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -2344,6 +2547,12 @@ extension ExpenseIsarQueryProperty
   QueryBuilder<ExpenseIsar, String?, QQueryOperations> noteProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'note');
+    });
+  }
+
+  QueryBuilder<ExpenseIsar, String?, QQueryOperations> paymentSystemProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'paymentSystem');
     });
   }
 

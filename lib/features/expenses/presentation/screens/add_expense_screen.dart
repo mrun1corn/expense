@@ -7,6 +7,9 @@ import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:expense/features/notifications/engine/pattern_detector.dart';
+import 'package:expense/core/extensions/double_ext.dart';
+import 'package:expense/core/payment/payment_systems_manager.dart';
+import 'package:expense/features/settings/presentation/providers/settings_provider.dart';
 import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -90,6 +93,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final stt.SpeechToText _speech = stt.SpeechToText();
   bool _speechAvailable = false;
   String _transcribedText = 'Tap Start Speaking to transcribe...';
+  String? _selectedPaymentSystem;
 
   bool get _isEditMode => widget.existingExpense != null;
 
@@ -147,6 +151,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       _selectedCategory = exp.category;
       _selectedDateTime = exp.date;
       _selectedType = exp.type;
+      _selectedPaymentSystem = exp.paymentSystem;
       if (exp.receiptImageUrl != null && exp.receiptImageUrl!.isNotEmpty) {
         _selectedReceiptImage = XFile(exp.receiptImageUrl!);
       }
@@ -222,6 +227,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currencyCode = ref.watch(currencyProvider);
+    final countryCode = ref.watch(countryCodeProvider);
+    final systems = PaymentSystemsManager.getSystemNamesForCountry(countryCode);
+    if (_selectedPaymentSystem != null && !systems.contains(_selectedPaymentSystem)) {
+      _selectedPaymentSystem = null;
+    }
 
     return Scaffold(
       backgroundColor: AppColors.getBgBase(context),
@@ -355,7 +366,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Text(
-                                r'$',
+                                0.0.toCurrencySymbol(currencyCode),
                                 style: AppTextStyles.monospace(
                                   32,
                                   color: AppColors.getFgTertiary(context),
@@ -596,24 +607,41 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'PAYMENT',
+                                    'PAYMENT SYSTEM',
                                     style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                                   ),
                                   const SizedBox(height: 8),
-                                  OutlinedButton.icon(
-                                    icon: const Icon(Icons.credit_card_outlined, size: 16),
-                                    label: Text(
-                                      'Visa *4242',
-                                      style: AppTextStyles.bodySm(color: AppColors.getFgPrimary(context)),
+                                  DropdownButtonFormField<String>(
+                                    value: _selectedPaymentSystem,
+                                    decoration: InputDecoration(
+                                      filled: true,
+                                      fillColor: AppColors.getBgSunken(context),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        borderSide: BorderSide.none,
+                                      ),
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
                                     ),
-                                    onPressed: () {},
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-                                      minimumSize: const Size.fromHeight(48),
-                                      alignment: Alignment.centerLeft,
-                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                      side: BorderSide(color: isDark ? const Color(0x1AFFFFFF) : const Color(0x1F000000)),
+                                    hint: Text(
+                                      'Select System',
+                                      style: AppTextStyles.bodySm(color: AppColors.getFgTertiary(context)),
                                     ),
+                                    isExpanded: true,
+                                    items: [
+                                      const DropdownMenuItem<String>(
+                                        value: null,
+                                        child: Text('None / Cash / Card'),
+                                      ),
+                                      ...systems.map((sys) => DropdownMenuItem<String>(
+                                        value: sys,
+                                        child: Text(sys),
+                                      )),
+                                    ],
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _selectedPaymentSystem = val;
+                                      });
+                                    },
                                   ),
                                 ],
                               ),
@@ -1032,6 +1060,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     
     final localPath = await _saveReceiptImageLocally(pickedFile);
     final hasApiKey = ref.read(apiKeyProvider).isNotEmpty;
+    final currencyCode = ref.read(currencyProvider);
     
     if (hasApiKey && localPath != null) {
       try {
@@ -1072,7 +1101,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 children: [
                   const Icon(Icons.auto_awesome, color: Colors.amber, size: 16),
                   const SizedBox(width: 8),
-                  Text('✦ AI parsed: $parsedTitle (\$$parsedAmount)!'),
+                  Text('✦ AI parsed: $parsedTitle (${0.0.toCurrencySymbol(currencyCode)}$parsedAmount)!'),
                 ],
               ),
               behavior: SnackBarBehavior.floating,
@@ -1110,12 +1139,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              Icon(Icons.auto_awesome, color: Colors.amber, size: 16),
-              SizedBox(width: 8),
-              Text(r'✦ AI Scanned Starbucks Coffee ($14.50)!'),
+              const Icon(Icons.auto_awesome, color: Colors.amber, size: 16),
+              const SizedBox(width: 8),
+              Text('✦ AI Scanned Starbucks Coffee (${0.0.toCurrencySymbol(currencyCode)}14.50)!'),
             ],
           ),
           behavior: SnackBarBehavior.floating,
@@ -1362,8 +1391,17 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     setState(() {
       _isProcessingVoice = true;
     });
-
     final hasApiKey = ref.read(apiKeyProvider).isNotEmpty;
+    final currencyCode = ref.read(currencyProvider);
+    final activeCountry = ref.read(countryCodeProvider);
+    final countrySystems = PaymentSystemsManager.getSystemNamesForCountry(activeCountry);
+    String? detectedSystem;
+    for (final sys in countrySystems) {
+      if (textToParse.toLowerCase().contains(sys.toLowerCase())) {
+        detectedSystem = sys;
+        break;
+      }
+    }
     if (hasApiKey) {
       try {
         final gemini = ref.read(geminiDatasourceProvider);
@@ -1396,6 +1434,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             }
             _selectedCategory = parsedCategory;
             _selectedType = parsedType;
+            if (detectedSystem != null) {
+              _selectedPaymentSystem = detectedSystem;
+            }
             _activeMethodTab = 2; // Switch to Manual
           });
 
@@ -1406,7 +1447,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 children: [
                   const Icon(Icons.auto_awesome, color: Colors.amber, size: 16),
                   const SizedBox(width: 8),
-                  Text('✦ AI parsed: $parsedTitle (\$$parsedAmount)!'),
+                  Text('✦ AI parsed: $parsedTitle (${0.0.toCurrencySymbol(currencyCode)}$parsedAmount)!'),
                 ],
               ),
               behavior: SnackBarBehavior.floating,
@@ -1428,6 +1469,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         _titleController.text = parsedData['title'] as String;
         _selectedCategory = parsedData['category'] as ExpenseCategory;
         _selectedType = parsedData['type'] as TransactionType;
+        if (detectedSystem != null) {
+          _selectedPaymentSystem = detectedSystem;
+        }
         _activeMethodTab = 2; // Switch to Manual
       });
 
@@ -1438,7 +1482,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             children: [
               const Icon(Icons.check_circle_outline, color: Colors.green, size: 16),
               const SizedBox(width: 8),
-              Text('Parsed: ${parsedData['title']} (\$${(parsedData['amount'] as double).toStringAsFixed(2)})!'),
+              Text('Parsed: ${parsedData['title']} (${(parsedData['amount'] as double).toCurrencyString(currencyCode)})!'),
             ],
           ),
           behavior: SnackBarBehavior.floating,
@@ -1459,6 +1503,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final repo = ref.read(expenseRepositoryProvider);
     final currentUser = ref.read(authStateProvider).valueOrNull;
     final userId = currentUser?.id ?? '';
+    final currencyCode = ref.read(currencyProvider);
 
     if (_isEditMode) {
       final updated = widget.existingExpense!.copyWith(
@@ -1469,6 +1514,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         date: _selectedDateTime,
         type: _selectedType,
         receiptImageUrl: _selectedReceiptImage?.path,
+        paymentSystem: _selectedPaymentSystem,
         updatedAt: DateTime.now(),
       );
 
@@ -1479,12 +1525,13 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         id: const Uuid().v4(),
         userId: userId,
         amount: amount,
-        currency: 'USD',
+        currency: currencyCode,
         category: _selectedCategory,
         date: _selectedDateTime,
         title: _titleController.text.trim(),
         note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
         receiptImageUrl: _selectedReceiptImage?.path,
+        paymentSystem: _selectedPaymentSystem,
         type: _selectedType,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),

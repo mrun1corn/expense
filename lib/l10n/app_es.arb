@@ -1,0 +1,16 @@
+{
+  "appTitle": "Rastreador de Gastos Inteligente",
+  "totalSpent": "Total Gastado",
+  "saved": "Guardado",
+  "rentDue": "Alquiler Vencido",
+  "spendingBreakdown": "Desglose de Gastos",
+  "recentTransactions": "Transacciones Recientes",
+  "settings": "Ajustes",
+  "theme": "Tema",
+  "currency": "Moneda",
+  "exportCsv": "Exportar Datos (CSV)",
+  "smartNotifications": "Notificaciones Inteligentes",
+  "profileSync": "Perfil y Sincronización",
+  "saveLimit": "Guardar Límite",
+  "addTransaction": "Agregar Transacción"
+}

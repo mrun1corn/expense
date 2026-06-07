@@ -1,10 +1,13 @@
 import 'package:expense/core/theme/app_theme.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
+import 'package:expense/core/extensions/double_ext.dart';
+import 'package:expense/features/settings/presentation/providers/settings_provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:expense/core/payment/payment_systems_manager.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -50,6 +53,28 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     }
   }
 
+  Color _getPaymentSystemColor(String systemName) {
+    final type = PaymentSystemsManager.getSystemTypeColor(systemName);
+    switch (type) {
+      case 'mfs':
+        return Colors.teal;
+      case 'rtp':
+        return Colors.blue;
+      case 'wallet':
+        return Colors.deepPurple;
+      case 'bank':
+        return Colors.brown;
+      case 'neo':
+        return Colors.orange;
+      case 'card':
+        return Colors.green;
+      case 'cbdc':
+        return Colors.pink;
+      default:
+        return Colors.grey;
+    }
+  }
+
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
       case ExpenseCategory.food: return Icons.restaurant;
@@ -77,8 +102,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final expensesAsync = ref.watch(expensesStreamProvider);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+        final expensesAsync = ref.watch(expensesStreamProvider);
+    final currencyCode = ref.watch(currencyProvider);
 
     return Scaffold(
       backgroundColor: AppColors.getBgBase(context),
@@ -111,6 +136,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             final categoryTotals = <ExpenseCategory, double>{};
             for (final e in monthlyExpenses) {
               categoryTotals[e.category] = (categoryTotals[e.category] ?? 0.0) + e.amount;
+            }
+
+            // 3b. Payment System breakdown
+            final paymentSystemTotals = <String, double>{};
+            for (final e in monthlyExpenses) {
+              if (e.paymentSystem != null && e.paymentSystem!.isNotEmpty) {
+                paymentSystemTotals[e.paymentSystem!] = (paymentSystemTotals[e.paymentSystem!] ?? 0.0) + e.amount;
+              }
             }
 
             // 4. Daily Spending Bar Chart totals
@@ -187,10 +220,10 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                   style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
-                                  '\$${totalSpent.toStringAsFixed(2)}',
-                                  style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
-                                ),
+                                  Text(
+                                    totalSpent.toCurrencyString(currencyCode),
+                                    style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
+                                  ),
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
@@ -440,7 +473,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                   style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
                                 ),
                                 trailing: Text(
-                                  '\$${amount.toStringAsFixed(2)}',
+                                  amount.toCurrencyString(currencyCode),
                                   style: AppTextStyles.monospace(
                                     14,
                                     color: AppColors.getFgPrimary(context),
@@ -451,6 +484,95 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                             }),
                           ],
                         ),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // Payment Systems Split title
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                    child: Text(
+                      'PAYMENT SYSTEMS SPLIT',
+                      style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                    ),
+                  ),
+                ),
+
+                // Payment Systems breakdown progress bars
+                if (monthlyExpenses.isEmpty)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Center(child: Text('No expenses recorded for this month.')),
+                    ),
+                  )
+                else ...[
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                      child: Container(
+                        decoration: AppShadows.getCardDecoration(context),
+                        padding: const EdgeInsets.all(20),
+                        child: paymentSystemTotals.isEmpty
+                            ? Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                child: Center(
+                                  child: Text(
+                                    'No payment systems used this month.',
+                                    style: AppTextStyles.bodyMd(color: AppColors.getFgSecondary(context)),
+                                  ),
+                                ),
+                              )
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  ...(paymentSystemTotals.entries.toList()
+                                        ..sort((a, b) => b.value.compareTo(a.value)))
+                                      .map((entry) {
+                                    final systemName = entry.key;
+                                    final amount = entry.value;
+                                    final pct = totalSpent > 0 ? (amount / totalSpent * 100).toStringAsFixed(1) : '0.0';
+                                    final color = _getPaymentSystemColor(systemName);
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                systemName,
+                                                style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
+                                              ),
+                                              Text(
+                                                '${amount.toCurrencyString(currencyCode)} ($pct%)',
+                                                style: AppTextStyles.monospace(
+                                                  14,
+                                                  color: AppColors.getFgPrimary(context),
+                                                  weight: FontWeight.w600,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 8),
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(4),
+                                            child: LinearProgressIndicator(
+                                              value: totalSpent > 0 ? amount / totalSpent : 0.0,
+                                              backgroundColor: color.withOpacity(0.1),
+                                              valueColor: AlwaysStoppedAnimation<Color>(color),
+                                              minHeight: 8,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }),
+                                ],
+                              ),
                       ),
                     ),
                   ),

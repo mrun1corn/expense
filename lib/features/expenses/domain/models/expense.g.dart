@@ -17,6 +17,7 @@ _$ExpenseImpl _$$ExpenseImplFromJson(Map<String, dynamic> json) =>
       title: json['title'] as String,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
+      paymentSystem: json['paymentSystem'] as String?,
       note: json['note'] as String?,
       receiptImageUrl: json['receiptImageUrl'] as String?,
       type: $enumDecodeNullable(_$TransactionTypeEnumMap, json['type']) ??
@@ -36,6 +37,7 @@ Map<String, dynamic> _$$ExpenseImplToJson(_$ExpenseImpl instance) =>
       'title': instance.title,
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
+      'paymentSystem': instance.paymentSystem,
       'note': instance.note,
       'receiptImageUrl': instance.receiptImageUrl,
       'type': _$TransactionTypeEnumMap[instance.type]!,

@@ -1,0 +1,16 @@
+{
+  "appTitle": "Smart Expense Tracker",
+  "totalSpent": "Total Spent",
+  "saved": "Saved",
+  "rentDue": "Rent Due",
+  "spendingBreakdown": "Spending Breakdown",
+  "recentTransactions": "Recent Transactions",
+  "settings": "Settings",
+  "theme": "Theme",
+  "currency": "Currency",
+  "exportCsv": "Export Data (CSV)",
+  "smartNotifications": "Smart Notifications",
+  "profileSync": "Profile & Sync",
+  "saveLimit": "Save Limit",
+  "addTransaction": "Add Transaction"
+}

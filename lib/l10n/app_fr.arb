@@ -1,0 +1,16 @@
+{
+  "appTitle": "Suivi des Dépenses Intelligent",
+  "totalSpent": "Total Dépensé",
+  "saved": "Économisé",
+  "rentDue": "Loyer Dû",
+  "spendingBreakdown": "Répartition des Dépenses",
+  "recentTransactions": "Transactions Récentes",
+  "settings": "Paramètres",
+  "theme": "Thème",
+  "currency": "Devise",
+  "exportCsv": "Exporter les Données (CSV)",
+  "smartNotifications": "Notifications Intelligentes",
+  "profileSync": "Profil & Synchro",
+  "saveLimit": "Enregistrer la Limite",
+  "addTransaction": "Ajouter une Transaction"
+}

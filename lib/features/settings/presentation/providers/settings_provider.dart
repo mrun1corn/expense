@@ -1,3 +1,4 @@
+import 'package:expense/core/payment/payment_systems_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -45,7 +46,13 @@ class CurrencyNotifier extends StateNotifier<String> {
 
   Future<void> _loadCurrency() async {
     final prefs = await SharedPreferences.getInstance();
-    state = prefs.getString(_prefKey) ?? 'USD';
+    if (prefs.containsKey(_prefKey)) {
+      state = prefs.getString(_prefKey)!;
+    } else {
+      final autoDetected = PaymentSystemsManager.getDeviceCountryCode();
+      final countryData = PaymentSystemsManager.getCountryData(autoDetected);
+      state = countryData?.currencyCode ?? 'USD';
+    }
   }
 
   Future<void> setCurrency(String currency) async {
@@ -54,3 +61,28 @@ class CurrencyNotifier extends StateNotifier<String> {
     state = currency;
   }
 }
+
+final countryCodeProvider = StateNotifierProvider<CountryNotifier, String>((ref) {
+  return CountryNotifier();
+});
+
+class CountryNotifier extends StateNotifier<String> {
+  CountryNotifier() : super('US') {
+    _loadCountry();
+  }
+
+  static const _prefKey = 'app_country_code';
+
+  Future<void> _loadCountry() async {
+    final prefs = await SharedPreferences.getInstance();
+    final autoDetected = PaymentSystemsManager.getDeviceCountryCode();
+    state = prefs.getString(_prefKey) ?? autoDetected;
+  }
+
+  Future<void> setCountry(String countryCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, countryCode);
+    state = countryCode;
+  }
+}
+

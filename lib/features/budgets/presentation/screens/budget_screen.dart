@@ -4,6 +4,8 @@ import 'package:expense/features/budgets/domain/models/budget.dart';
 import 'package:expense/features/budgets/presentation/providers/budget_provider.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
+import 'package:expense/core/extensions/double_ext.dart';
+import 'package:expense/features/settings/presentation/providers/settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -54,6 +56,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
     final budgetsAsync = ref.watch(budgetsStreamProvider(_selectedMonth));
     final expensesAsync = ref.watch(expensesStreamProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currencyCode = ref.watch(currencyProvider);
 
     return Scaffold(
       backgroundColor: AppColors.getBgBase(context),
@@ -84,6 +87,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                   budget: b,
                   spentAmount: spent,
                   onEdit: () => _openAddBudgetSheet(context, b),
+                  currencyCode: currencyCode,
                   onDelete: () async {
                     await ref.read(budgetRepositoryProvider).deleteBudget(b.id);
                     if (context.mounted) {
@@ -143,7 +147,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            '\$${totalBudget.toStringAsFixed(0)}',
+                            '${totalBudget.toCurrencySymbol(currencyCode)}${totalBudget.toStringAsFixed(0)}',
                             style: AppTextStyles.monospace(
                               32,
                               color: AppColors.getHeroFg(context),
@@ -152,7 +156,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Spent: \$${totalSpent.toStringAsFixed(0)} · Remaining: \$${remaining.toStringAsFixed(0)}',
+                            'Spent: ${totalSpent.toCurrencySymbol(currencyCode)}${totalSpent.toStringAsFixed(0)} · Remaining: ${remaining.toCurrencySymbol(currencyCode)}${remaining.toStringAsFixed(0)}',
                             style: AppTextStyles.bodySm(
                               color: AppColors.getHeroFgMuted(context),
                             ),
@@ -274,7 +278,7 @@ class _BudgetScreenState extends ConsumerState<BudgetScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                     Text(
-                                      r'Your spending on Utilities is currently under budget. AI suggests you could reallocate $100 of unused limit to Transport based on your 30-day pattern.',
+                                      'Your spending on Utilities is currently under budget. AI suggests you could reallocate ${100.0.toCurrencySymbol(currencyCode)}100 of unused limit to Transport based on your 30-day pattern.',
                                       style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)).copyWith(height: 1.4),
                                     ),
                                 ],
@@ -333,11 +337,13 @@ class _BudgetItem extends StatelessWidget {
     required this.spentAmount,
     required this.onEdit,
     required this.onDelete,
+    required this.currencyCode,
   });
   final Budget budget;
   final double spentAmount;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
+  final String currencyCode;
 
   IconData _getCategoryIcon(ExpenseCategory category) {
     switch (category) {
@@ -447,7 +453,7 @@ class _BudgetItem extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '\$${spentAmount.toStringAsFixed(0)} of \$${limit.toStringAsFixed(0)} limit',
+                      '${spentAmount.toCurrencySymbol(currencyCode)}${spentAmount.toStringAsFixed(0)} of ${limit.toCurrencySymbol(currencyCode)}${limit.toStringAsFixed(0)} limit',
                       style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
                     ),
                   ],
@@ -553,6 +559,7 @@ class _AddBudgetBottomSheetState extends ConsumerState<_AddBudgetBottomSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final currencyCode = ref.watch(currencyProvider);
 
     return Container(
       decoration: BoxDecoration(
@@ -613,9 +620,9 @@ class _AddBudgetBottomSheetState extends ConsumerState<_AddBudgetBottomSheet> {
               FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
             ],
             decoration: InputDecoration(
-              labelText: r'Limit Amount ($)',
+              labelText: 'Limit Amount (${0.0.toCurrencySymbol(currencyCode)})',
               hintText: '0.00',
-              prefixText: r'$ ',
+              prefixText: '${0.0.toCurrencySymbol(currencyCode)} ',
               filled: true,
               fillColor: AppColors.getBgSunken(context),
               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
@@ -660,7 +667,7 @@ class _AddBudgetBottomSheetState extends ConsumerState<_AddBudgetBottomSheet> {
                           userId: userId,
                           category: _category,
                           limitAmount: limit,
-                          currency: 'USD',
+                          currency: currencyCode,
                           month: widget.selectedMonth.month,
                           year: widget.selectedMonth.year,
                           createdAt: DateTime.now(),

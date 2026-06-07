@@ -20,6 +20,7 @@ class ExpenseIsar {
   late String title;
   String? note;
   String? receiptImageUrl;
+  String? paymentSystem;
   late bool isSynced;
   late bool isDeleted;
   late DateTime createdAt;
@@ -38,6 +39,7 @@ class ExpenseIsar {
       ),
       date: date,
       title: title,
+      paymentSystem: paymentSystem,
       note: note,
       receiptImageUrl: receiptImageUrl,
       type: TransactionType.values.firstWhere(
@@ -62,6 +64,7 @@ class ExpenseIsar {
       ..type = expense.type.name
       ..date = expense.date
       ..title = expense.title
+      ..paymentSystem = expense.paymentSystem
       ..note = expense.note
       ..receiptImageUrl = expense.receiptImageUrl
       ..isSynced = expense.isSynced

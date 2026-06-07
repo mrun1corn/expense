@@ -31,6 +31,7 @@ mixin _$Expense {
   String get title => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
+  String? get paymentSystem => throw _privateConstructorUsedError;
   String? get note => throw _privateConstructorUsedError;
   String? get receiptImageUrl => throw _privateConstructorUsedError;
   TransactionType get type => throw _privateConstructorUsedError;
@@ -57,6 +58,7 @@ abstract class $ExpenseCopyWith<$Res> {
       String title,
       DateTime createdAt,
       DateTime updatedAt,
+      String? paymentSystem,
       String? note,
       String? receiptImageUrl,
       TransactionType type,
@@ -86,6 +88,7 @@ class _$ExpenseCopyWithImpl<$Res, $Val extends Expense>
     Object? title = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? paymentSystem = freezed,
     Object? note = freezed,
     Object? receiptImageUrl = freezed,
     Object? type = null,
@@ -129,6 +132,10 @@ class _$ExpenseCopyWithImpl<$Res, $Val extends Expense>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      paymentSystem: freezed == paymentSystem
+          ? _value.paymentSystem
+          : paymentSystem // ignore: cast_nullable_to_non_nullable
+              as String?,
       note: freezed == note
           ? _value.note
           : note // ignore: cast_nullable_to_non_nullable
@@ -170,6 +177,7 @@ abstract class _$$ExpenseImplCopyWith<$Res> implements $ExpenseCopyWith<$Res> {
       String title,
       DateTime createdAt,
       DateTime updatedAt,
+      String? paymentSystem,
       String? note,
       String? receiptImageUrl,
       TransactionType type,
@@ -197,6 +205,7 @@ class __$$ExpenseImplCopyWithImpl<$Res>
     Object? title = null,
     Object? createdAt = null,
     Object? updatedAt = null,
+    Object? paymentSystem = freezed,
     Object? note = freezed,
     Object? receiptImageUrl = freezed,
     Object? type = null,
@@ -240,6 +249,10 @@ class __$$ExpenseImplCopyWithImpl<$Res>
           ? _value.updatedAt
           : updatedAt // ignore: cast_nullable_to_non_nullable
               as DateTime,
+      paymentSystem: freezed == paymentSystem
+          ? _value.paymentSystem
+          : paymentSystem // ignore: cast_nullable_to_non_nullable
+              as String?,
       note: freezed == note
           ? _value.note
           : note // ignore: cast_nullable_to_non_nullable
@@ -277,6 +290,7 @@ class _$ExpenseImpl implements _Expense {
       required this.title,
       required this.createdAt,
       required this.updatedAt,
+      this.paymentSystem,
       this.note,
       this.receiptImageUrl,
       this.type = TransactionType.expense,
@@ -308,6 +322,8 @@ class _$ExpenseImpl implements _Expense {
   @override
   final DateTime updatedAt;
   @override
+  final String? paymentSystem;
+  @override
   final String? note;
   @override
   final String? receiptImageUrl;
@@ -323,7 +339,7 @@ class _$ExpenseImpl implements _Expense {
 
   @override
   String toString() {
-    return 'Expense(id: $id, userId: $userId, amount: $amount, currency: $currency, category: $category, date: $date, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, note: $note, receiptImageUrl: $receiptImageUrl, type: $type, isSynced: $isSynced, isDeleted: $isDeleted)';
+    return 'Expense(id: $id, userId: $userId, amount: $amount, currency: $currency, category: $category, date: $date, title: $title, createdAt: $createdAt, updatedAt: $updatedAt, paymentSystem: $paymentSystem, note: $note, receiptImageUrl: $receiptImageUrl, type: $type, isSynced: $isSynced, isDeleted: $isDeleted)';
   }
 
   @override
@@ -344,6 +360,8 @@ class _$ExpenseImpl implements _Expense {
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
                 other.updatedAt == updatedAt) &&
+            (identical(other.paymentSystem, paymentSystem) ||
+                other.paymentSystem == paymentSystem) &&
             (identical(other.note, note) || other.note == note) &&
             (identical(other.receiptImageUrl, receiptImageUrl) ||
                 other.receiptImageUrl == receiptImageUrl) &&
@@ -367,6 +385,7 @@ class _$ExpenseImpl implements _Expense {
       title,
       createdAt,
       updatedAt,
+      paymentSystem,
       note,
       receiptImageUrl,
       type,
@@ -398,6 +417,7 @@ abstract class _Expense implements Expense {
       required final String title,
       required final DateTime createdAt,
       required final DateTime updatedAt,
+      final String? paymentSystem,
       final String? note,
       final String? receiptImageUrl,
       final TransactionType type,
@@ -424,6 +444,8 @@ abstract class _Expense implements Expense {
   DateTime get createdAt;
   @override
   DateTime get updatedAt;
+  @override
+  String? get paymentSystem;
   @override
   String? get note;
   @override
