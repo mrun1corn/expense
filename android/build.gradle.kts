@@ -21,6 +21,23 @@ subprojects {
         if (isAndroid) {
             extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
                 compileSdkVersion(36)
+                if (namespace == null) {
+                    val manifestFile = project.file("src/main/AndroidManifest.xml")
+                    if (manifestFile.exists()) {
+                        try {
+                            val parser = javax.xml.parsers.DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                            val doc = parser.parse(manifestFile)
+                            val pkg = doc.documentElement.getAttribute("package")
+                            if (pkg.isNotEmpty()) {
+                                namespace = pkg
+                            }
+                        } catch (e: Exception) {
+                            namespace = "com.example.${project.name.replace("_", ".")}"
+                        }
+                    } else {
+                        namespace = "com.example.${project.name.replace("_", ".")}"
+                    }
+                }
             }
         }
     }
