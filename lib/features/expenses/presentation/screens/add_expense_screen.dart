@@ -16,6 +16,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:uuid/uuid.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,41 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
     this.existingExpense,
   });
   final Expense? existingExpense;
+
+  static Map<String, dynamic> localParseVoiceText(String text) {
+    double amount = 0.0;
+    String title = text;
+    
+    // Find numbers (decimal or integer)
+    final numRegex = RegExp(r'\b\d+(?:\.\d{1,2})?\b');
+    final matches = numRegex.allMatches(text);
+    if (matches.isNotEmpty) {
+      for (final match in matches) {
+        final val = double.tryParse(match.group(0)!);
+        if (val != null) {
+          amount = val;
+          title = text.replaceFirst(match.group(0)!, '').trim();
+          break;
+        }
+      }
+    }
+    
+    // Clean up title
+    title = title.replaceAll(RegExp(r'\s+'), ' ');
+    title = title.replaceAll(RegExp(r'\b(spent|dollars|cents|on|for|a|an|the|at|in)\b', caseSensitive: false), '').trim();
+    if (title.isEmpty) {
+      title = 'Voice Transaction';
+    } else {
+      title = title[0].toUpperCase() + title.substring(1);
+    }
+    
+    return {
+      'title': title,
+      'amount': amount,
+      'category': ExpenseCategory.other,
+      'type': TransactionType.expense,
+    };
+  }
 
   @override
   ConsumerState<AddExpenseScreen> createState() => _AddExpenseScreenState();
@@ -51,6 +87,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   int _recordingSeconds = 0;
   Timer? _recordingTimer;
   XFile? _selectedReceiptImage;
+  final stt.SpeechToText _speech = stt.SpeechToText();
+  bool _speechAvailable = false;
+  String _transcribedText = 'Tap Start Speaking to transcribe...';
 
   bool get _isEditMode => widget.existingExpense != null;
 
@@ -814,36 +853,64 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                       ],
                     ),
                   )
-                : Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.qr_code_scanner_outlined,
-                        size: 64,
-                        color: AppColors.getFgTertiary(context),
+                : _selectedReceiptImage != null
+                    ? Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(11),
+                            child: Image.file(
+                              File(_selectedReceiptImage!.path),
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: CircleAvatar(
+                              backgroundColor: Colors.black.withOpacity(0.6),
+                              radius: 16,
+                              child: IconButton(
+                                icon: const Icon(Icons.close, size: 16, color: Colors.white),
+                                onPressed: _removeReceiptImage,
+                                padding: EdgeInsets.zero,
+                              ),
+                            ),
+                          ),
+                        ],
+                      )
+                    : Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.qr_code_scanner_outlined,
+                            size: 64,
+                            color: AppColors.getFgTertiary(context),
+                          ),
+                          Positioned(
+                            top: 20,
+                            left: 20,
+                            child: Container(width: 20, height: 20, decoration: const BoxDecoration(border: Border(top: BorderSide(color: Colors.grey, width: 2), left: BorderSide(color: Colors.grey, width: 2)))),
+                          ),
+                          Positioned(
+                            top: 20,
+                            right: 20,
+                            child: Container(width: 20, height: 20, decoration: const BoxDecoration(border: Border(top: BorderSide(color: Colors.grey, width: 2), right: BorderSide(color: Colors.grey, width: 2)))),
+                          ),
+                          Positioned(
+                            bottom: 20,
+                            left: 20,
+                            child: Container(width: 20, height: 20, decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 2), left: BorderSide(color: Colors.grey, width: 2)))),
+                          ),
+                          Positioned(
+                            bottom: 20,
+                            right: 20,
+                            child: Container(width: 20, height: 20, decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 2), right: BorderSide(color: Colors.grey, width: 2)))),
+                          ),
+                        ],
                       ),
-                      Positioned(
-                        top: 20,
-                        left: 20,
-                        child: Container(width: 20, height: 20, decoration: const BoxDecoration(border: Border(top: BorderSide(color: Colors.grey, width: 2), left: BorderSide(color: Colors.grey, width: 2)))),
-                      ),
-                      Positioned(
-                        top: 20,
-                        right: 20,
-                        child: Container(width: 20, height: 20, decoration: const BoxDecoration(border: Border(top: BorderSide(color: Colors.grey, width: 2), right: BorderSide(color: Colors.grey, width: 2)))),
-                      ),
-                      Positioned(
-                        bottom: 20,
-                        left: 20,
-                        child: Container(width: 20, height: 20, decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 2), left: BorderSide(color: Colors.grey, width: 2)))),
-                      ),
-                      Positioned(
-                        bottom: 20,
-                        right: 20,
-                        child: Container(width: 20, height: 20, decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey, width: 2), right: BorderSide(color: Colors.grey, width: 2)))),
-                      ),
-                    ],
-                  ),
           ),
           const SizedBox(height: 20),
           Text(
@@ -1057,6 +1124,34 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     });
   }
 
+  Future<void> _initSpeech() async {
+    try {
+      final hasSpeech = await _speech.initialize(
+        onStatus: (status) {
+          debugPrint('Speech status: $status');
+          if (status == 'notListening' || status == 'done') {
+            if (_isRecording) {
+              _stopVoiceRecording();
+            }
+          }
+        },
+        onError: (errorNotification) {
+          debugPrint('Speech error: ${errorNotification.errorMsg}');
+          if (_isRecording) {
+            _stopVoiceRecording();
+          }
+        },
+      );
+      if (mounted) {
+        setState(() {
+          _speechAvailable = hasSpeech;
+        });
+      }
+    } catch (e) {
+      debugPrint('Speech initialization failed: $e');
+    }
+  }
+
   Widget _buildVoiceInputView() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1082,12 +1177,26 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                           'Listening...',
                           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
                         ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '0:0$_recordingSeconds',
-                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            _transcribedText,
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.bodySm(color: AppColors.getFgPrimary(context)).copyWith(
+                              fontStyle: FontStyle.italic,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 8),
+                        Text(
+                          '0:${_recordingSeconds.toString().padLeft(2, '0')}',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(
@@ -1126,9 +1235,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                               color: AppColors.getFgTertiary(context),
                             ),
                             const SizedBox(height: 12),
-                            const Text(
-                              'Tap to say your expense',
-                              style: TextStyle(fontWeight: FontWeight.w500),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                _transcribedText.startsWith('Tap') ? _transcribedText : 'Last transcription: "$_transcribedText"',
+                                textAlign: TextAlign.center,
+                                style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                           ],
                         ),
@@ -1167,62 +1282,169 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     );
   }
 
-  void _startVoiceRecording() {
+  Future<void> _startVoiceRecording() async {
+    HapticFeedback.lightImpact();
+
+    if (!_speechAvailable) {
+      await _initSpeech();
+    }
+
+    if (!_speechAvailable) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Speech recognition is not available on this device.')),
+        );
+      }
+      return;
+    }
+
     setState(() {
       _isRecording = true;
       _recordingSeconds = 0;
+      _transcribedText = 'Listening...';
     });
-
-    HapticFeedback.lightImpact();
 
     _recordingTimer?.cancel();
     _recordingTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) return;
       setState(() {
         _recordingSeconds++;
-        if (_recordingSeconds >= 5) {
+        if (_recordingSeconds >= 15) {
           _stopVoiceRecording();
         }
       });
     });
+
+    try {
+      await _speech.listen(
+        onResult: (result) {
+          if (mounted) {
+            setState(() {
+              _transcribedText = result.recognizedWords;
+            });
+          }
+        },
+      );
+    } catch (e) {
+      debugPrint('Speech listen failed: $e');
+      _stopVoiceRecording();
+    }
   }
 
-  void _stopVoiceRecording() {
+  Future<void> _stopVoiceRecording() async {
     _recordingTimer?.cancel();
     if (!mounted) return;
 
+    final textToParse = _transcribedText.trim();
+    final isListening = _speech.isListening;
+
     setState(() {
       _isRecording = false;
-      _isProcessingVoice = true;
     });
+
+    if (isListening) {
+      try {
+        await _speech.stop();
+      } catch (e) {
+        debugPrint('Speech stop failed: $e');
+      }
+    }
 
     HapticFeedback.mediumImpact();
 
-    Timer(const Duration(milliseconds: 1800), () {
-      if (!mounted) return;
+    if (textToParse.isEmpty || textToParse == 'Listening...' || textToParse.startsWith('Tap')) {
+      setState(() {
+        _transcribedText = 'No voice detected. Tap to try again.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isProcessingVoice = true;
+    });
+
+    final hasApiKey = ref.read(apiKeyProvider).isNotEmpty;
+    if (hasApiKey) {
+      try {
+        final gemini = ref.read(geminiDatasourceProvider);
+        final jsonResult = await gemini.parseExpenseFromText(textToParse);
+        final data = jsonDecode(jsonResult) as Map<String, dynamic>;
+
+        final parsedTitle = data['title'] as String?;
+        final parsedAmount = data['amount'];
+        final parsedCategoryStr = data['category'] as String?;
+        final parsedTypeStr = data['type'] as String?;
+
+        final parsedCategory = ExpenseCategory.values.firstWhere(
+          (c) => c.name.toLowerCase() == parsedCategoryStr?.toLowerCase(),
+          orElse: () => ExpenseCategory.other,
+        );
+
+        final parsedType = TransactionType.values.firstWhere(
+          (t) => t.name.toLowerCase() == parsedTypeStr?.toLowerCase(),
+          orElse: () => TransactionType.expense,
+        );
+
+        if (mounted) {
+          setState(() {
+            _isProcessingVoice = false;
+            if (parsedAmount != null) {
+              _amountController.text = parsedAmount.toString();
+            }
+            if (parsedTitle != null && parsedTitle.isNotEmpty) {
+              _titleController.text = parsedTitle;
+            }
+            _selectedCategory = parsedCategory;
+            _selectedType = parsedType;
+            _activeMethodTab = 2; // Switch to Manual
+          });
+
+          HapticFeedback.heavyImpact();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.auto_awesome, color: Colors.amber, size: 16),
+                  const SizedBox(width: 8),
+                  Text('✦ AI parsed: $parsedTitle (\$$parsedAmount)!'),
+                ],
+              ),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      } catch (e) {
+        debugPrint('Gemini voice analysis failed: $e');
+      }
+    }
+
+    // Local Fallback Parser
+    final parsedData = AddExpenseScreen.localParseVoiceText(textToParse);
+    if (mounted) {
       setState(() {
         _isProcessingVoice = false;
-        _amountController.text = '12.00';
-        _titleController.text = 'Taxi ride';
-        _selectedCategory = ExpenseCategory.transport;
-        _selectedType = TransactionType.expense;
+        _amountController.text = (parsedData['amount'] as double).toStringAsFixed(2);
+        _titleController.text = parsedData['title'] as String;
+        _selectedCategory = parsedData['category'] as ExpenseCategory;
+        _selectedType = parsedData['type'] as TransactionType;
         _activeMethodTab = 2; // Switch to Manual
       });
 
       HapticFeedback.heavyImpact();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           content: Row(
             children: [
-              Icon(Icons.auto_awesome, color: Colors.amber, size: 16),
-              SizedBox(width: 8),
-              Text(r'✦ Voice processed: Taxi ride ($12.00)!'),
+              const Icon(Icons.check_circle_outline, color: Colors.green, size: 16),
+              const SizedBox(width: 8),
+              Text('Parsed: ${parsedData['title']} (\$${(parsedData['amount'] as double).toStringAsFixed(2)})!'),
             ],
           ),
           behavior: SnackBarBehavior.floating,
         ),
       );
-    });
+    }
   }
 
   Future<void> _saveExpense() async {

@@ -3,6 +3,7 @@ import 'package:expense/features/ai_insights/presentation/screens/ai_insights_sc
 import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:expense/features/auth/presentation/login_screen.dart';
 import 'package:expense/features/auth/presentation/profile_screen.dart';
+import 'package:expense/features/analytics/presentation/screens/analytics_screen.dart';
 import 'package:expense/features/budgets/presentation/screens/budget_screen.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/screens/add_expense_screen.dart';
@@ -106,6 +107,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           context: context,
           state: state,
           child: const BudgetScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/analytics',
+        pageBuilder: (context, state) => _buildPageWithSlideTransition(
+          context: context,
+          state: state,
+          child: const AnalyticsScreen(),
         ),
       ),
       GoRoute(

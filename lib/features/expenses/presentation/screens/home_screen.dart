@@ -223,6 +223,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             const SizedBox(width: 12),
                             IconButton(
+                              icon: const Icon(Icons.analytics_outlined),
+                              onPressed: () => context.push('/analytics'),
+                            ),
+                            IconButton(
                               icon: const Icon(Icons.auto_awesome),
                               color: AppColors.getInfo(context),
                               onPressed: () => context.push('/settings/notifications'),
@@ -236,106 +240,109 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: AppColors.getHeroBg(context),
-                            borderRadius: BorderRadius.circular(16),
-                            border: isDark ? Border.all(color: const Color(0x1FFFFFFF)) : null,
-                            boxShadow: AppShadows.getShadow1(context),
-                          ),
-                          padding: const EdgeInsets.all(20),
-                          child: Stack(
-                            children: [
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'TOTAL SPENT',
-                                    style: AppTextStyles.overline(color: AppColors.getHeroFgMuted(context)),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    '\$${totalExpenses.toStringAsFixed(2)}',
-                                    style: AppTextStyles.monospace(
-                                      32,
-                                      color: AppColors.getHeroFg(context),
-                                      weight: FontWeight.w700,
+                        child: GestureDetector(
+                          onTap: () => context.push('/analytics'),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.getHeroBg(context),
+                              borderRadius: BorderRadius.circular(16),
+                              border: isDark ? Border.all(color: const Color(0x1FFFFFFF)) : null,
+                              boxShadow: AppShadows.getShadow1(context),
+                            ),
+                            padding: const EdgeInsets.all(20),
+                            child: Stack(
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'TOTAL SPENT',
+                                      style: AppTextStyles.overline(color: AppColors.getHeroFgMuted(context)),
                                     ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'of \$${totalBudgetLimit.toStringAsFixed(0)} budget',
-                                    style: AppTextStyles.bodySm(color: AppColors.getHeroFgMuted(context)),
-                                  ),
-                                  const SizedBox(height: 20),
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(3),
-                                    child: SizedBox(
-                                      height: 6,
-                                      child: LinearProgressIndicator(
-                                        value: percent,
-                                        backgroundColor: const Color(0x22FFFFFF),
-                                        valueColor: AlwaysStoppedAnimation<Color>(
-                                          percent > 0.9
-                                              ? AppColors.dangerLight
-                                              : (percent > 0.75
-                                                  ? AppColors.warningLight
-                                                  : AppColors.getHeroFg(context)),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '\$${totalExpenses.toStringAsFixed(2)}',
+                                      style: AppTextStyles.monospace(
+                                        32,
+                                        color: AppColors.getHeroFg(context),
+                                        weight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'of \$${totalBudgetLimit.toStringAsFixed(0)} budget',
+                                      style: AppTextStyles.bodySm(color: AppColors.getHeroFgMuted(context)),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(3),
+                                      child: SizedBox(
+                                        height: 6,
+                                        child: LinearProgressIndicator(
+                                          value: percent,
+                                          backgroundColor: const Color(0x22FFFFFF),
+                                          valueColor: AlwaysStoppedAnimation<Color>(
+                                            percent > 0.9
+                                                ? AppColors.dangerLight
+                                                : (percent > 0.75
+                                                    ? AppColors.warningLight
+                                                    : AppColors.getHeroFg(context)),
+                                          ),
                                         ),
                                       ),
                                     ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        r'$0',
-                                        style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
-                                      ),
-                                      Text(
-                                        r'$' '${remaining.toStringAsFixed(0)} left',
-                                        style: AppTextStyles.captionBold(color: AppColors.getHeroFg(context)),
-                                      ),
-                                      Text(
-                                        r'$' '${totalBudgetLimit.toStringAsFixed(0)}',
-                                        style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    color: deltaPercent >= 0
-                                        ? (isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFEE2E2))
-                                        : (isDark ? const Color(0xFF14532D) : const Color(0xFFDCFCE7)),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        deltaPercent >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
-                                        size: 10,
-                                        color: deltaPercent >= 0 ? AppColors.getDanger(context) : AppColors.getSuccess(context),
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        '${deltaPercent >= 0 ? "+" : "-"}${deltaPercent.abs().toStringAsFixed(0)}% vs last month',
-                                        style: AppTextStyles.captionBold(
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          r'$0',
+                                          style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
+                                        ),
+                                        Text(
+                                          r'$' '${remaining.toStringAsFixed(0)} left',
+                                          style: AppTextStyles.captionBold(color: AppColors.getHeroFg(context)),
+                                        ),
+                                        Text(
+                                          r'$' '${totalBudgetLimit.toStringAsFixed(0)}',
+                                          style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                                Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: deltaPercent >= 0
+                                          ? (isDark ? const Color(0xFF7F1D1D) : const Color(0xFFFEE2E2))
+                                          : (isDark ? const Color(0xFF14532D) : const Color(0xFFDCFCE7)),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          deltaPercent >= 0 ? Icons.arrow_upward : Icons.arrow_downward,
+                                          size: 10,
                                           color: deltaPercent >= 0 ? AppColors.getDanger(context) : AppColors.getSuccess(context),
                                         ),
-                                      ),
-                                    ],
+                                        const SizedBox(width: 2),
+                                        Text(
+                                          '${deltaPercent >= 0 ? "+" : "-"}${deltaPercent.abs().toStringAsFixed(0)}% vs last month',
+                                          style: AppTextStyles.captionBold(
+                                            color: deltaPercent >= 0 ? AppColors.getDanger(context) : AppColors.getSuccess(context),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),

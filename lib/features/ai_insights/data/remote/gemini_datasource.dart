@@ -153,4 +153,23 @@ class GeminiDatasource {
       return trigger;
     }
   }
+
+  Future<String> parseExpenseFromText(String text) async {
+    try {
+      final model = await _getModel();
+      final response = await model.generateContent([
+        Content.text('Analyze this transaction description: "$text". '
+            'Extract: '
+            '1. Transaction title or merchant name (under "title" key) '
+            '2. Transaction amount (under "amount" key as a float/double) '
+            '3. Main category (under "category" key, matching one of these values: food, transport, utilities, entertainment, shopping, health, education, other). '
+            '4. Transaction type (under "type" key, matching one of these values: expense, income, borrow, lend). '
+            'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "type". Do not include markdown code block formatting or explanations. Just raw JSON.'),
+      ]);
+      return response.text?.trim() ?? '{}';
+    } catch (e) {
+      print('Gemini parseExpenseFromText error: $e');
+      rethrow;
+    }
+  }
 }

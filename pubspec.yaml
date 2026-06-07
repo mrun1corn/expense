@@ -62,6 +62,7 @@ dependencies:
   csv: ^8.0.0
   share_plus: ^13.1.0
   image_picker: ^1.1.2
+  speech_to_text: any
   path: any
 dev_dependencies:
   flutter_test:

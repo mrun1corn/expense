@@ -472,9 +472,11 @@ class _BudgetItem extends StatelessWidget {
                 value: percent,
                 backgroundColor: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE5E5E5),
                 valueColor: AlwaysStoppedAnimation<Color>(
-                  isOver
+                  percent > 0.90
                       ? AppColors.getDanger(context)
-                      : (percent > 0.75 ? AppColors.getWarning(context) : AppColors.getBrandPrimary(context)),
+                      : (percent >= 0.70
+                          ? AppColors.getWarning(context)
+                          : AppColors.getSuccess(context)),
                 ),
               ),
             ),
@@ -486,9 +488,9 @@ class _BudgetItem extends StatelessWidget {
               Text(
                 '${(percent * 100).toStringAsFixed(0)}% used',
                 style: AppTextStyles.captionBold(
-                  color: isOver
+                  color: percent > 0.90
                       ? AppColors.getDanger(context)
-                      : (percent > 0.75 ? AppColors.getWarning(context) : AppColors.getSuccess(context)),
+                      : (percent >= 0.70 ? AppColors.getWarning(context) : AppColors.getSuccess(context)),
                 ),
               ),
               if (isOver)
