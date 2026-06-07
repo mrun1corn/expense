@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:expense/core/payment/payment_systems_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,11 +64,12 @@ class CurrencyNotifier extends StateNotifier<String> {
 }
 
 final countryCodeProvider = StateNotifierProvider<CountryNotifier, String>((ref) {
-  return CountryNotifier();
+  return CountryNotifier(ref);
 });
 
 class CountryNotifier extends StateNotifier<String> {
-  CountryNotifier() : super('US') {
+  final Ref _ref;
+  CountryNotifier(this._ref) : super('US') {
     _loadCountry();
   }
 
@@ -76,13 +78,89 @@ class CountryNotifier extends StateNotifier<String> {
   Future<void> _loadCountry() async {
     final prefs = await SharedPreferences.getInstance();
     final autoDetected = PaymentSystemsManager.getDeviceCountryCode();
-    state = prefs.getString(_prefKey) ?? autoDetected;
+    final country = prefs.getString(_prefKey) ?? autoDetected;
+    state = country;
+    _ref.read(localeProvider.notifier).updateLocaleForCountry(country);
   }
 
   Future<void> setCountry(String countryCode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKey, countryCode);
     state = countryCode;
+    _ref.read(localeProvider.notifier).updateLocaleForCountry(countryCode);
+  }
+}
+
+final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
+  return LocaleNotifier(ref);
+});
+
+class LocaleNotifier extends StateNotifier<Locale> {
+  final Ref _ref;
+  LocaleNotifier(this._ref) : super(const Locale('en')) {
+    _loadLocale();
+  }
+
+  static const _prefKey = 'app_locale';
+
+  Future<void> _loadLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (prefs.containsKey(_prefKey)) {
+      state = Locale(prefs.getString(_prefKey)!);
+    } else {
+      final deviceLocale = ui.PlatformDispatcher.instance.locale;
+      if (['en', 'es', 'fr'].contains(deviceLocale.languageCode)) {
+        state = Locale(deviceLocale.languageCode);
+      } else {
+        final country = _ref.read(countryCodeProvider);
+        state = _getLocaleForCountry(country);
+      }
+    }
+  }
+
+  Future<void> setLocale(Locale locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_prefKey, locale.languageCode);
+    state = locale;
+  }
+
+  void updateLocaleForCountry(String countryCode) {
+    final locale = _getLocaleForCountry(countryCode);
+    setLocale(locale);
+  }
+
+  Locale _getLocaleForCountry(String countryCode) {
+    switch (countryCode.toUpperCase()) {
+      case 'FR':
+      case 'BE':
+      case 'CH':
+      case 'CA':
+        return const Locale('fr');
+      case 'ES':
+      case 'MX':
+      case 'AR':
+      case 'CO':
+      case 'PE':
+      case 'BR':
+      case 'CL':
+      case 'VE':
+      case 'EC':
+      case 'GT':
+      case 'CU':
+      case 'BO':
+      case 'DO':
+      case 'HN':
+      case 'PY':
+      case 'SV':
+      case 'CR':
+      case 'PA':
+      case 'UY':
+      case 'NI':
+      case 'PR':
+        return const Locale('es');
+      default:
+        return const Locale('en');
+    }
   }
 }
 

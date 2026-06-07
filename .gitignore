@@ -49,3 +49,5 @@ graphify-out/
 # Android build directory
 /android/build/
 
+# MFS Payment Systems Explorer (source reference)
+/global_mfs_payment_systems_explorer.html
