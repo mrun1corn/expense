@@ -4,9 +4,9 @@ import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
 
-/// The translations for French (`fr`).
-class AppLocalizationsFr extends AppLocalizations {
-  AppLocalizationsFr([String locale = 'fr']) : super(locale);
+/// The translations for Hebrew (`he`).
+class AppLocalizationsHe extends AppLocalizations {
+  AppLocalizationsHe([String locale = 'he']) : super(locale);
 
   @override
   String get appTitle => 'Smart Expense Tracker';
