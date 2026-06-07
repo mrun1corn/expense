@@ -78,6 +78,88 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  void _showRegionCurrencyBottomSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.getBgBase(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            final countries = PaymentSystemsManager.getSupportedCountries();
+            return Column(
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Select Region & Currency',
+                    style: AppTextStyles.headingMd(color: AppColors.getFgPrimary(context)),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: countries.length,
+                    itemBuilder: (context, index) {
+                      final map = countries[index];
+                      final code = map['code']!;
+                      final name = map['name']!;
+                      final countryData = PaymentSystemsManager.getCountryData(code);
+                      final currencyCode = countryData?.currencyCode ?? '';
+                      final currencySymbol = countryData?.currencySymbol ?? '';
+                      final isSelected = ref.read(countryCodeProvider) == code;
+
+                      return ListTile(
+                        title: Text(
+                          name,
+                          style: AppTextStyles.bodyMd(
+                            color: AppColors.getFgPrimary(context),
+                          ).copyWith(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Currency: $currencyCode ($currencySymbol)',
+                          style: AppTextStyles.caption(color: AppColors.getFgSecondary(context)),
+                        ),
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle, color: AppColors.getBrandPrimary(context))
+                            : null,
+                        onTap: () {
+                          ref.read(countryCodeProvider.notifier).setCountry(code);
+                          if (countryData != null) {
+                            ref.read(currencyProvider.notifier).setCurrency(countryData.currencyCode);
+                          }
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final savedKey = ref.watch(apiKeyProvider);
@@ -320,36 +402,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 'Region & Currency',
                 style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
               ),
-              subtitle: Text(
-                'Country setting for currency & payment systems',
-                style: AppTextStyles.caption(color: AppColors.getFgSecondary(context)),
-              ),
-              trailing: DropdownButton<String>(
-                value: ref.watch(countryCodeProvider),
-                underline: const SizedBox(),
-                onChanged: (newValue) {
-                  if (newValue != null) {
-                    ref.read(countryCodeProvider.notifier).setCountry(newValue);
-                    final countryData = PaymentSystemsManager.getCountryData(newValue);
-                    if (countryData != null) {
-                      ref.read(currencyProvider.notifier).setCurrency(countryData.currencyCode);
-                    }
-                  }
-                },
-                items: PaymentSystemsManager.getSupportedCountries()
-                    .map<DropdownMenuItem<String>>((map) {
-                  final code = map['code']!;
-                  final countryData = PaymentSystemsManager.getCountryData(code);
-                  final currencySuffix = countryData != null ? ' (${countryData.currencyCode})' : '';
-                  return DropdownMenuItem<String>(
-                    value: code,
-                    child: Text(
-                      '${map['name']}$currencySuffix',
-                      style: AppTextStyles.bodySm(color: AppColors.getFgPrimary(context)),
-                    ),
+              subtitle: Consumer(
+                builder: (context, ref, child) {
+                  final activeCode = ref.watch(countryCodeProvider);
+                  final countryData = PaymentSystemsManager.getCountryData(activeCode);
+                  final countryName = countryData?.country ?? 'United States';
+                  final currencyCode = countryData?.currencyCode ?? 'USD';
+                  final currencySymbol = countryData?.currencySymbol ?? '\$';
+                  return Text(
+                    '$countryName — $currencyCode ($currencySymbol)',
+                    style: AppTextStyles.caption(color: AppColors.getFgSecondary(context)),
                   );
-                }).toList(),
+                },
               ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showRegionCurrencyBottomSheet(context),
             ),
           ),
 
