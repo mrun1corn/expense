@@ -1064,7 +1064,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     
     if (hasApiKey && localPath != null) {
       try {
-        final imageBytes = await File(localPath).readAsBytes();
+        final file = File(localPath);
+        final imageBytes = await file.readAsBytes();
         final gemini = ref.read(geminiDatasourceProvider);
         
         final jsonResult = await gemini.analyzeReceiptImage(imageBytes, 'image/jpeg');
@@ -1073,11 +1074,21 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         final parsedTitle = data['title'] as String?;
         final parsedAmount = data['amount'];
         final parsedCategoryStr = data['category'] as String?;
+        final parsedSummary = data['summary'] as String?;
         
         final parsedCategory = ExpenseCategory.values.firstWhere(
           (c) => c.name.toLowerCase() == parsedCategoryStr?.toLowerCase(),
           orElse: () => ExpenseCategory.other,
         );
+        
+        // Delete the temporary file now that bytes are processed
+        try {
+          if (await file.exists()) {
+            await file.delete();
+          }
+        } catch (de) {
+          debugPrint('Failed to delete temp receipt image: $de');
+        }
         
         if (mounted) {
           setState(() {
@@ -1088,9 +1099,12 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             if (parsedTitle != null && parsedTitle.isNotEmpty) {
               _titleController.text = parsedTitle;
             }
+            if (parsedSummary != null && parsedSummary.isNotEmpty) {
+              _noteController.text = parsedSummary;
+            }
             _selectedCategory = parsedCategory;
             _selectedType = TransactionType.expense;
-            _selectedReceiptImage = XFile(localPath);
+            _selectedReceiptImage = null; // Do not save the image
             _activeMethodTab = 2;
           });
           
@@ -1111,6 +1125,15 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         return;
       } catch (e) {
         debugPrint('Gemini receipt analysis failed: $e');
+        // Clean up on error
+        try {
+          final file = File(localPath);
+          if (file.existsSync()) {
+            file.deleteSync();
+          }
+        } catch (de) {
+          debugPrint('Failed to delete temp receipt image on error: $de');
+        }
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1125,15 +1148,27 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     
     Timer(const Duration(milliseconds: 1800), () {
       if (!mounted) return;
+      
+      // Clean up in fallback
+      if (localPath != null) {
+        try {
+          final file = File(localPath);
+          if (file.existsSync()) {
+            file.deleteSync();
+          }
+        } catch (de) {
+          debugPrint('Failed to delete temp receipt image in fallback: $de');
+        }
+      }
+
       setState(() {
         _isScanning = false;
         _amountController.text = '14.50';
         _titleController.text = 'Starbucks Coffee';
+        _noteController.text = 'OCR Receipt Summary:\n1x Caramel Macchiato - \$6.50\n1x Blueberry Scone - \$4.50\n1x Butter Croissant - \$3.50';
         _selectedCategory = ExpenseCategory.food;
         _selectedType = TransactionType.expense;
-        if (localPath != null) {
-          _selectedReceiptImage = XFile(localPath);
-        }
+        _selectedReceiptImage = null; // Do not save the image
         _activeMethodTab = 2;
       });
 

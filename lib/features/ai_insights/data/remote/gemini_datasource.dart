@@ -59,7 +59,8 @@ class GeminiDatasource {
               '1. Vendor/store name (under "title" field) '
               '2. Total amount charged (under "amount" field as a float/double) '
               '3. Main category of purchases (under "category" field, matching one of these values: food, transport, utilities, entertainment, shopping, health, education, other). '
-              'Return ONLY a clean JSON object containing keys: "title", "amount", "category". Do not include markdown code block formatting or explanations. Just raw JSON.'),
+              '4. A concise text summary of items, quantities, and individual prices (under "summary" field). '
+              'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "summary". Do not include markdown code block formatting or explanations. Just raw JSON.'),
           DataPart(mimeType, imageBytes),
         ]),
       ]);

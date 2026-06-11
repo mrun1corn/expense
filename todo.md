@@ -65,14 +65,14 @@ This is the actionable checklist for building the **Smart Expense Tracker** (Flu
 - [x] **Add/Edit Expense Screen:**
   - [x] Numeric keyboard, category chips with haptics, datetime picker (preserving time), validation
   - [x] Edit mode with pre-fill, auto-categorize debounce (pre-filling suggested category via Gemini - note: autocompletion requires Phase 6 for active predictions)
-- [ ] **Budget Screen:**
-  - [ ] Define monthly limits per category
-  - [ ] Progress bars: green (<70%), amber (70-90%), red (>90%)
-  - [ ] Real-time updates & threshold crossing checks
-- [ ] **Analytics Screen:**
-  - [ ] 6-month spending line chart, category pie chart, daily bar chart, date filters, spending change delta
-- [ ] **Settings Screen:**
-  - [ ] Currency selector, theme toggle (light/dark/system), CSV export, notification page entry
+- [x] **Budget Screen:**
+  - [x] Define monthly limits per category
+  - [x] Progress bars: green (<70%), amber (70-90%), red (>90%)
+  - [x] Real-time updates & threshold crossing checks
+- [x] **Analytics Screen:**
+  - [x] 6-month spending line chart, category pie chart, daily bar chart, date filters, spending change delta
+- [x] **Settings Screen:**
+  - [x] Currency selector, theme toggle (light/dark/system), CSV export, notification page entry
 
 ---
 
