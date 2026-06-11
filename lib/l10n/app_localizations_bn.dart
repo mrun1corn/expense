@@ -9,44 +9,44 @@ class AppLocalizationsBn extends AppLocalizations {
   AppLocalizationsBn([String locale = 'bn']) : super(locale);
 
   @override
-  String get appTitle => 'Smart Expense Tracker';
+  String get appTitle => 'স্মার্ট খরচ ট্র্যাকার';
 
   @override
-  String get totalSpent => 'Total Spent';
+  String get totalSpent => 'মোট খরচ';
 
   @override
-  String get saved => 'Saved';
+  String get saved => 'সঞ্চয়';
 
   @override
-  String get rentDue => 'Rent Due';
+  String get rentDue => 'ভাড়া বাকি';
 
   @override
-  String get spendingBreakdown => 'Spending Breakdown';
+  String get spendingBreakdown => 'খরচের বিবরণ';
 
   @override
-  String get recentTransactions => 'Recent Transactions';
+  String get recentTransactions => 'সাম্প্রতিক লেনদেন';
 
   @override
-  String get settings => 'Settings';
+  String get settings => 'সেটিংস';
 
   @override
-  String get theme => 'Theme';
+  String get theme => 'থিম';
 
   @override
-  String get currency => 'Currency';
+  String get currency => 'মুদ্রা';
 
   @override
-  String get exportCsv => 'Export Data (CSV)';
+  String get exportCsv => 'ডেটা এক্সপোর্ট (CSV)';
 
   @override
-  String get smartNotifications => 'Smart Notifications';
+  String get smartNotifications => 'স্মার্ট নোটিফিকেশন';
 
   @override
-  String get profileSync => 'Profile & Sync';
+  String get profileSync => 'প্রোফাইল এবং সিঙ্ক';
 
   @override
-  String get saveLimit => 'Save Limit';
+  String get saveLimit => 'সীমা সংরক্ষণ';
 
   @override
-  String get addTransaction => 'Add Transaction';
+  String get addTransaction => 'লেনদেন যোগ করুন';
 }

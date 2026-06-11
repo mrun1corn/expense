@@ -141,7 +141,6 @@ class LocaleNotifier extends StateNotifier<Locale> {
       case 'AR':
       case 'CO':
       case 'PE':
-      case 'BR':
       case 'CL':
       case 'VE':
       case 'EC':
@@ -158,6 +157,69 @@ class LocaleNotifier extends StateNotifier<Locale> {
       case 'NI':
       case 'PR':
         return const Locale('es');
+      case 'BR':
+      case 'PT':
+      case 'AO':
+      case 'MZ':
+        return const Locale('pt');
+      case 'DE':
+      case 'AT':
+        return const Locale('de');
+      case 'IT':
+        return const Locale('it');
+      case 'JP':
+        return const Locale('ja');
+      case 'KR':
+        return const Locale('ko');
+      case 'CN':
+      case 'TW':
+      case 'HK':
+        return const Locale('zh');
+      case 'BD':
+        return const Locale('bn');
+      case 'TR':
+        return const Locale('tr');
+      case 'RU':
+      case 'BY':
+      case 'KZ':
+        return const Locale('ru');
+      case 'SA':
+      case 'EG':
+      case 'AE':
+      case 'QA':
+      case 'JO':
+      case 'LB':
+      case 'MA':
+      case 'DZ':
+        return const Locale('ar');
+      case 'NL':
+        return const Locale('nl');
+      case 'DK':
+        return const Locale('da');
+      case 'FI':
+        return const Locale('fi');
+      case 'NO':
+        return const Locale('no');
+      case 'SE':
+        return const Locale('sv');
+      case 'PL':
+        return const Locale('pl');
+      case 'RO':
+        return const Locale('ro');
+      case 'UA':
+        return const Locale('uk');
+      case 'VN':
+        return const Locale('vi');
+      case 'GR':
+        return const Locale('el');
+      case 'HU':
+        return const Locale('hu');
+      case 'IL':
+        return const Locale('he');
+      case 'CZ':
+        return const Locale('cs');
+      case 'ZA':
+        return const Locale('af');
       default:
         return const Locale('en');
     }

@@ -9,44 +9,44 @@ class AppLocalizationsFr extends AppLocalizations {
   AppLocalizationsFr([String locale = 'fr']) : super(locale);
 
   @override
-  String get appTitle => 'Smart Expense Tracker';
+  String get appTitle => 'Suivi des Dépenses Intelligent';
 
   @override
-  String get totalSpent => 'Total Spent';
+  String get totalSpent => 'Total Dépensé';
 
   @override
-  String get saved => 'Saved';
+  String get saved => 'Économisé';
 
   @override
-  String get rentDue => 'Rent Due';
+  String get rentDue => 'Loyer Dû';
 
   @override
-  String get spendingBreakdown => 'Spending Breakdown';
+  String get spendingBreakdown => 'Répartition des Dépenses';
 
   @override
-  String get recentTransactions => 'Recent Transactions';
+  String get recentTransactions => 'Transactions Récentes';
 
   @override
-  String get settings => 'Settings';
+  String get settings => 'Paramètres';
 
   @override
-  String get theme => 'Theme';
+  String get theme => 'Thème';
 
   @override
-  String get currency => 'Currency';
+  String get currency => 'Devise';
 
   @override
-  String get exportCsv => 'Export Data (CSV)';
+  String get exportCsv => 'Exporter les Données (CSV)';
 
   @override
-  String get smartNotifications => 'Smart Notifications';
+  String get smartNotifications => 'Notifications Intelligentes';
 
   @override
-  String get profileSync => 'Profile & Sync';
+  String get profileSync => 'Profil et Synchronisation';
 
   @override
-  String get saveLimit => 'Save Limit';
+  String get saveLimit => 'Enregistrer la Limite';
 
   @override
-  String get addTransaction => 'Add Transaction';
+  String get addTransaction => 'Ajouter une Transaction';
 }

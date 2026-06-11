@@ -9,44 +9,44 @@ class AppLocalizationsZh extends AppLocalizations {
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
-  String get appTitle => 'Smart Expense Tracker';
+  String get appTitle => '智能记账助手';
 
   @override
-  String get totalSpent => 'Total Spent';
+  String get totalSpent => '总支出';
 
   @override
-  String get saved => 'Saved';
+  String get saved => '已节省';
 
   @override
-  String get rentDue => 'Rent Due';
+  String get rentDue => '房租截止日';
 
   @override
-  String get spendingBreakdown => 'Spending Breakdown';
+  String get spendingBreakdown => '消费细分';
 
   @override
-  String get recentTransactions => 'Recent Transactions';
+  String get recentTransactions => '最近交易';
 
   @override
-  String get settings => 'Settings';
+  String get settings => '设置';
 
   @override
-  String get theme => 'Theme';
+  String get theme => '主题';
 
   @override
-  String get currency => 'Currency';
+  String get currency => '货币';
 
   @override
-  String get exportCsv => 'Export Data (CSV)';
+  String get exportCsv => '导出数据 (CSV)';
 
   @override
-  String get smartNotifications => 'Smart Notifications';
+  String get smartNotifications => '智能通知';
 
   @override
-  String get profileSync => 'Profile & Sync';
+  String get profileSync => '个人资料与同步';
 
   @override
-  String get saveLimit => 'Save Limit';
+  String get saveLimit => '保存限制';
 
   @override
-  String get addTransaction => 'Add Transaction';
+  String get addTransaction => '添加交易';
 }
