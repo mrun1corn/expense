@@ -1,5 +1,5 @@
 import os
-from PIL import Image
+from PIL import Image, ImageDraw
 
 def process_icon():
     icon_path = os.path.join("assets", "icon", "app_icon.png")
@@ -74,5 +74,27 @@ def process_icon():
     fg_img.save(fg_path, "PNG")
     print(f"Saved transparent foreground icon to {fg_path}")
 
+def process_legacy_icon():
+    icon_path = os.path.join("assets", "icon", "app_icon.png")
+    if not os.path.exists(icon_path):
+        print(f"Error: {icon_path} not found.")
+        return
+
+    img = Image.open(icon_path).convert("RGBA")
+    width, height = img.size
+
+    # Create a rounded rectangle mask for legacy icons to avoid sharp corners
+    # A radius of 80px (15.6% of 512px) creates a beautiful squircle/rounded icon
+    mask = Image.new("L", (width, height), 0)
+    draw = ImageDraw.Draw(mask)
+    draw.rounded_rectangle((0, 0, width - 1, height - 1), radius=80, fill=255)
+
+    img.putalpha(mask)
+
+    legacy_path = os.path.join("assets", "icon", "app_icon_legacy.png")
+    img.save(legacy_path, "PNG")
+    print(f"Saved legacy rounded icon to {legacy_path}")
+
 if __name__ == "__main__":
     process_icon()
+    process_legacy_icon()

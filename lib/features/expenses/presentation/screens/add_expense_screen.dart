@@ -23,6 +23,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:uuid/uuid.dart';
 import 'package:expense/features/home/presentation/screens/main_shell_screen.dart';
 import 'package:expense/l10n/app_localizations.dart';
+import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   const AddExpenseScreen({
@@ -64,6 +65,21 @@ class AddExpenseScreen extends ConsumerStatefulWidget {
       'category': ExpenseCategory.other,
       'type': TransactionType.expense,
     };
+  }
+
+  static TextRecognitionScript getOcrScriptForLanguage(String languageCode) {
+    switch (languageCode) {
+      case 'zh':
+        return TextRecognitionScript.chinese;
+      case 'ja':
+        return TextRecognitionScript.japanese;
+      case 'ko':
+        return TextRecognitionScript.korean;
+      case 'hi':
+        return TextRecognitionScript.devanagiri;
+      default:
+        return TextRecognitionScript.latin;
+    }
   }
 
   @override
@@ -1117,14 +1133,32 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final currencyCode = ref.read(currencyProvider);
     
     if (hasApiKey && localPath != null) {
+      TextRecognizer? textRecognizer;
       try {
-        final file = File(localPath);
-        final imageBytes = await file.readAsBytes();
-        final gemini = ref.read(geminiDatasourceProvider);
-        
         final language = ref.read(localeProvider).languageCode;
-        final jsonResult = await gemini.analyzeReceiptImage(imageBytes, 'image/jpeg', language);
-        final data = jsonDecode(jsonResult) as Map<String, dynamic>;
+        final script = AddExpenseScreen.getOcrScriptForLanguage(language);
+        textRecognizer = TextRecognizer(script: script);
+        
+        final inputImage = InputImage.fromFilePath(localPath);
+        final recognizedText = await textRecognizer.processImage(inputImage);
+        final ocrText = recognizedText.text.trim();
+        
+        Map<String, dynamic> data;
+        
+        // Use OCR text if detected (at least 10 non-whitespace characters containing letters/numbers)
+        if (ocrText.length >= 10 && RegExp('[a-zA-Z0-9]').hasMatch(ocrText)) {
+          debugPrint('OCR detected text: ${ocrText.length} characters. Processing text with Gemini.');
+          final gemini = ref.read(geminiDatasourceProvider);
+          final jsonResult = await gemini.analyzeReceiptText(ocrText, language);
+          data = jsonDecode(jsonResult) as Map<String, dynamic>;
+        } else {
+          debugPrint('OCR returned empty or insufficient text. Falling back to raw image analysis.');
+          final file = File(localPath);
+          final imageBytes = await file.readAsBytes();
+          final gemini = ref.read(geminiDatasourceProvider);
+          final jsonResult = await gemini.analyzeReceiptImage(imageBytes, 'image/jpeg', language);
+          data = jsonDecode(jsonResult) as Map<String, dynamic>;
+        }
         
         final parsedTitle = data['title'] as String?;
         final parsedAmount = data['amount'];
@@ -1138,7 +1172,10 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         
         // Delete the temporary file now that bytes are processed
         try {
-          await file.delete();
+          final file = File(localPath);
+          if (file.existsSync()) {
+            await file.delete();
+          }
         } catch (de) {
           debugPrint('Failed to delete temp receipt image: $de');
         }
@@ -1181,7 +1218,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         // Clean up on error
         try {
           final file = File(localPath);
-          await file.delete();
+          if (file.existsSync()) {
+            await file.delete();
+          }
         } catch (de) {
           debugPrint('Failed to delete temp receipt image on error: $de');
         }
@@ -1194,6 +1233,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
             ),
           );
         }
+      } finally {
+        textRecognizer?.close();
       }
     }
     

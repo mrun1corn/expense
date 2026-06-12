@@ -116,6 +116,26 @@ class GeminiDatasource {
     }
   }
 
+  Future<String> analyzeReceiptText(String ocrText, String language) async {
+    try {
+      final model = await _getModel();
+      final response = await model.generateContent([
+        Content.text('Analyze this receipt text (extracted via OCR): \n"$ocrText"\n'
+            'Extract: '
+            '1. Vendor/store name (under "title" field) '
+            '2. Total amount charged (under "amount" field as a float/double) '
+            '3. Main category of purchases (under "category" field, matching one of these values: food, transport, utilities, entertainment, shopping, health, education, other). '
+            '4. A concise text summary of items, quantities, and individual prices (under "summary" field). '
+            'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "summary". Do not include markdown code block formatting or explanations. Just raw JSON. '
+            'Important: The "summary" description must be in the language corresponding to language code: "$language".'),
+      ]);
+      return response.text?.trim() ?? '{}';
+    } catch (e) {
+      print('Gemini analyzeReceiptText error: $e');
+      rethrow;
+    }
+  }
+
   Future<String> generateMonthlySummary(String expensesJson, String language) async {
     try {
       final model = await _getModel();
