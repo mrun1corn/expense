@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:expense/core/payment/payment_systems_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
@@ -105,23 +106,27 @@ class LocaleNotifier extends StateNotifier<Locale> {
 
   Future<void> _loadLocale() async {
     final prefs = await SharedPreferences.getInstance();
+    Locale loadedLocale;
     if (prefs.containsKey(_prefKey)) {
-      state = Locale(prefs.getString(_prefKey)!);
+      loadedLocale = Locale(prefs.getString(_prefKey)!);
     } else {
       final deviceLocale = ui.PlatformDispatcher.instance.locale;
       if (['en', 'es', 'fr'].contains(deviceLocale.languageCode)) {
-        state = Locale(deviceLocale.languageCode);
+        loadedLocale = Locale(deviceLocale.languageCode);
       } else {
         final country = _ref.read(countryCodeProvider);
-        state = _getLocaleForCountry(country);
+        loadedLocale = _getLocaleForCountry(country);
       }
     }
+    state = loadedLocale;
+    Intl.defaultLocale = loadedLocale.languageCode;
   }
 
   Future<void> setLocale(Locale locale) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKey, locale.languageCode);
     state = locale;
+    Intl.defaultLocale = locale.languageCode;
   }
 
   void updateLocaleForCountry(String countryCode) {

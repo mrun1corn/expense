@@ -1,9 +1,15 @@
 import 'package:expense/core/payment/payment_systems_manager.dart';
+import 'package:intl/intl.dart';
 
 extension CurrencyFormatter on double {
-  String toCurrencyString(String currencyCode) {
+  String toCurrencyString(String currencyCode, [String? locale]) {
     final symbol = toCurrencySymbol(currencyCode);
-    return '$symbol${toStringAsFixed(2)}';
+    final format = NumberFormat.currency(
+      locale: locale ?? Intl.defaultLocale,
+      symbol: symbol,
+      decimalDigits: 2,
+    );
+    return format.format(this);
   }
 
   String toCurrencySymbol(String currencyCode) {

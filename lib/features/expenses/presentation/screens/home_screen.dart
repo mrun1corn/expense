@@ -171,9 +171,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final userName = currentUser?.displayName ?? 'Alex';
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final rentSettings = ref.watch(rentSettingsProvider);
-    final rentAmount = rentSettings.amount;
-    final dueDay = rentSettings.dueDay;
     final currencyCode = ref.watch(currencyProvider);
 
     return Scaffold(
@@ -194,27 +191,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     e.date.year == _selectedMonth.year &&
                     !e.isDeleted).toList();
 
-                final rentPayments = expenses
-                    .where((e) =>
-                        (e.title.toLowerCase().contains('rent') ||
-                            e.note?.toLowerCase().contains('rent') == true) &&
-                        e.type == TransactionType.expense &&
-                        !e.isDeleted)
-                    .toList();
-                
                 final now = DateTime.now();
-                final paidThisMonth = rentPayments.any((e) => e.date.month == now.month && e.date.year == now.year);
-                
-                DateTime nextDueDate;
-                if (paidThisMonth) {
-                  nextDueDate = DateTime(now.year, now.month + 1, dueDay);
-                } else {
-                  nextDueDate = DateTime(now.year, now.month, dueDay);
-                }
+                final isCurrentMonth = now.month == _selectedMonth.month && now.year == _selectedMonth.year;
 
-                final daysRemaining = nextDueDate.difference(now).inDays;
-                final displayRemaining = daysRemaining <= 0 ? 'Due today' : '$daysRemaining days';
-                final displaySub = '${DateFormat('MMM d').format(nextDueDate)} - ${rentAmount.toCurrencySymbol(currencyCode)}${rentAmount.toStringAsFixed(0)}';
+                final todayExpenses = thisMonthExpenses
+                    .where((e) =>
+                        e.date.day == now.day &&
+                        e.date.month == now.month &&
+                        e.date.year == now.year &&
+                        e.type == TransactionType.expense)
+                    .fold<double>(0, (sum, e) => sum + e.amount);
+
+                final daysPassed = isCurrentMonth
+                    ? now.day
+                    : DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0).day;
 
                 final totalIncome = thisMonthExpenses
                     .where((e) => e.type == TransactionType.income)
@@ -225,6 +215,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     .fold<double>(0, (sum, e) => sum + e.amount);
 
                 final netSaved = totalIncome - totalExpenses;
+                final dailyAverage = totalExpenses / (daysPassed > 0 ? daysPassed : 1);
+
+                final isBn = Localizations.localeOf(context).languageCode == 'bn';
+                final remainingTitle = isBn ? 'বাকি বাজেট' : 'REMAINING';
+                final spentText = isBn ? 'ব্যয়' : 'spent';
+                final todayTitle = isBn ? 'আজকের খরচ' : 'TODAY';
+                final spentTodayText = isBn ? 'আজকে ব্যয়' : 'spent today';
+                final dailyAverageTitle = isBn ? 'দৈনিক গড়' : 'DAILY AVERAGE';
+                final averagePerDayText = isBn ? 'প্রতিদিনের গড়' : 'average per day';
 
                 // Calculate budget parameters
                 final spentByCategory = <ExpenseCategory, double>{};
@@ -415,75 +414,87 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Container(
-                                decoration: AppShadows.getCardDecoration(context, radius: 12),
-                                padding: const EdgeInsets.all(14),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        child: IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => context.push('/budgets'),
+                                  child: Container(
+                                    decoration: AppShadows.getCardDecoration(context, radius: 12),
+                                    padding: const EdgeInsets.all(14),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          AppLocalizations.of(context)!.saved.toUpperCase(),
-                                          style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              remainingTitle.toUpperCase(),
+                                              style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                                            ),
+                                            Icon(Icons.pie_chart_outline_rounded, size: 16, color: AppColors.getFgTertiary(context)),
+                                          ],
                                         ),
-                                        Icon(Icons.savings_outlined, size: 16, color: AppColors.getFgTertiary(context)),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '${remaining.toCurrencySymbol(currencyCode)}${remaining.toStringAsFixed(0)}',
+                                          style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${totalExpenses.toCurrencySymbol(currencyCode)}${totalExpenses.toStringAsFixed(0)} $spentText',
+                                          style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                                        ),
                                       ],
                                     ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      '${netSaved.toCurrencySymbol(currencyCode)}${netSaved.toStringAsFixed(0)}',
-                                      style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'vs last month',
-                                      style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: () => context.push('/rent-tracker'),
-                                child: Container(
-                                  decoration: AppShadows.getCardDecoration(context, radius: 12),
-                                  padding: const EdgeInsets.all(14),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            AppLocalizations.of(context)!.rentDue.toUpperCase(),
-                                            style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
-                                          ),
-                                          Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.getFgTertiary(context)),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        displayRemaining,
-                                        style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '$displaySub · Manage',
-                                        style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
-                                      ),
-                                    ],
                                   ),
                                 ),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: GestureDetector(
+                                  onTap: () => context.push('/analytics'),
+                                  child: Container(
+                                    decoration: AppShadows.getCardDecoration(context, radius: 12),
+                                    padding: const EdgeInsets.all(14),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Text(
+                                              (isCurrentMonth ? todayTitle : dailyAverageTitle).toUpperCase(),
+                                              style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                                            ),
+                                            Icon(
+                                              isCurrentMonth ? Icons.today_rounded : Icons.speed_rounded,
+                                              size: 16,
+                                              color: AppColors.getFgTertiary(context),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          isCurrentMonth
+                                              ? '${todayExpenses.toCurrencySymbol(currencyCode)}${todayExpenses.toStringAsFixed(0)}'
+                                              : '${dailyAverage.toCurrencySymbol(currencyCode)}${dailyAverage.toStringAsFixed(0)}',
+                                          style: AppTextStyles.displayMd(color: AppColors.getFgPrimary(context)),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          isCurrentMonth ? spentTodayText : averagePerDayText,
+                                          style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -501,10 +512,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             ),
                             GestureDetector(
                               onTap: () => context.push('/budgets'),
-                              child: Text(
-                                'Manage Budgets',
-                                style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)).copyWith(
-                                  decoration: TextDecoration.underline,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.getBrandPrimary(context).withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'Manage Budgets',
+                                      style: AppTextStyles.captionBold(
+                                        color: AppColors.getBrandPrimary(context),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 14,
+                                      color: AppColors.getBrandPrimary(context),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -610,10 +639,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               onTap: () {
                                 // Clear filter or go to insights
                               },
-                              child: Text(
-                                'See All',
-                                style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)).copyWith(
-                                  decoration: TextDecoration.underline,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppColors.getBrandPrimary(context).withOpacity(0.08),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'See All',
+                                      style: AppTextStyles.captionBold(
+                                        color: AppColors.getBrandPrimary(context),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Icon(
+                                      Icons.chevron_right_rounded,
+                                      size: 14,
+                                      color: AppColors.getBrandPrimary(context),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),

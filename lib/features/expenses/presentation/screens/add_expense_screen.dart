@@ -1083,9 +1083,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         
         // Delete the temporary file now that bytes are processed
         try {
-          if (await file.exists()) {
-            await file.delete();
-          }
+          await file.delete();
         } catch (de) {
           debugPrint('Failed to delete temp receipt image: $de');
         }
@@ -1128,9 +1126,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         // Clean up on error
         try {
           final file = File(localPath);
-          if (file.existsSync()) {
-            file.deleteSync();
-          }
+          await file.delete();
         } catch (de) {
           debugPrint('Failed to delete temp receipt image on error: $de');
         }
