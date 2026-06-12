@@ -19,3 +19,8 @@
 # Play Store / Deferred Components warnings
 -dontwarn com.google.android.play.core.**
 
+# Google ML Kit Text Recognition
+-keep class com.google.mlkit.** { *; }
+-dontwarn com.google.mlkit.**
+-dontwarn com.google.android.gms.**
+-dontwarn com.google.android.odml.**
