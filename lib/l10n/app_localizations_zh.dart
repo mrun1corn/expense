@@ -49,4 +49,13 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get addTransaction => '添加交易';
+
+  @override
+  String get transactionAdded => 'Transaction added successfully!';
+
+  @override
+  String get transactionUpdated => 'Transaction updated successfully!';
+
+  @override
+  String get transactionDeleted => 'Transaction deleted successfully!';
 }

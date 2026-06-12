@@ -49,4 +49,13 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get addTransaction => 'লেনদেন যোগ করুন';
+
+  @override
+  String get transactionAdded => 'লেনদেন সফলভাবে যোগ করা হয়েছে!';
+
+  @override
+  String get transactionUpdated => 'লেনদেন সফলভাবে আপডেট করা হয়েছে!';
+
+  @override
+  String get transactionDeleted => 'লেনদেন সফলভাবে মুছে ফেলা হয়েছে!';
 }

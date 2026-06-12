@@ -21,6 +21,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:uuid/uuid.dart';
+import 'package:expense/features/home/presentation/screens/main_shell_screen.dart';
+import 'package:expense/l10n/app_localizations.dart';
 
 class AddExpenseScreen extends ConsumerStatefulWidget {
   const AddExpenseScreen({
@@ -1531,6 +1533,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       return;
     }
 
+    // Dismiss keyboard first
+    FocusScope.of(context).unfocus();
+
     final repo = ref.read(expenseRepositoryProvider);
     final currentUser = ref.read(authStateProvider).valueOrNull;
     final userId = currentUser?.id ?? '';
@@ -1573,7 +1578,51 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     }
 
     HapticFeedback.heavyImpact();
-    if (mounted) context.pop();
+
+    // Invalidate stream to update all listening screens
+    ref.invalidate(expensesStreamProvider);
+
+    if (mounted) {
+      // Show success toast SnackBar
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_outline_rounded, color: Colors.green, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                _isEditMode
+                    ? AppLocalizations.of(context)!.transactionUpdated
+                    : AppLocalizations.of(context)!.transactionAdded,
+                style: AppTextStyles.bodySm(color: Colors.white),
+              ),
+            ],
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      if (_isEditMode) {
+        context.pop();
+      } else {
+        // Clear form fields
+        _titleController.clear();
+        _noteController.clear();
+        _amountController.clear();
+        
+        setState(() {
+          _selectedCategory = ExpenseCategory.food;
+          _selectedDateTime = DateTime.now();
+          _selectedReceiptImage = null;
+          _selectedPaymentSystem = null;
+          _activeMethodTab = 2; // Reset back to manual tab
+        });
+
+        // Switch shell tab back to Home tab (index 0)
+        ref.read(shellTabIndexProvider.notifier).state = 0;
+      }
+    }
   }
 
   Future<void> _confirmDelete() async {
@@ -1595,7 +1644,29 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
 
     if (confirm == true && mounted) {
       await ref.read(expenseRepositoryProvider).deleteExpense(widget.existingExpense!.id);
-      if (mounted) context.pop();
+      
+      // Invalidate stream to update list immediately
+      ref.invalidate(expensesStreamProvider);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  AppLocalizations.of(context)!.transactionDeleted,
+                  style: AppTextStyles.bodySm(color: Colors.white),
+                ),
+              ],
+            ),
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        context.pop();
+      }
     }
   }
 

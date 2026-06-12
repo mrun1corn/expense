@@ -12,5 +12,8 @@
   "smartNotifications": "স্মার্ট নোটিফিকেশন",
   "profileSync": "প্রোফাইল এবং সিঙ্ক",
   "saveLimit": "সীমা সংরক্ষণ",
-  "addTransaction": "লেনদেন যোগ করুন"
+  "addTransaction": "লেনদেন যোগ করুন",
+  "transactionAdded": "লেনদেন সফলভাবে যোগ করা হয়েছে!",
+  "transactionUpdated": "লেনদেন সফলভাবে আপডেট করা হয়েছে!",
+  "transactionDeleted": "লেনদেন সফলভাবে মুছে ফেলা হয়েছে!"
 }

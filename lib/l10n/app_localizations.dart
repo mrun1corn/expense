@@ -235,6 +235,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add Transaction'**
   String get addTransaction;
+
+  /// No description provided for @transactionAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction added successfully!'**
+  String get transactionAdded;
+
+  /// No description provided for @transactionUpdated.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction updated successfully!'**
+  String get transactionUpdated;
+
+  /// No description provided for @transactionDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Transaction deleted successfully!'**
+  String get transactionDeleted;
 }
 
 class _AppLocalizationsDelegate

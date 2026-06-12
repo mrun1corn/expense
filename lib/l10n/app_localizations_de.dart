@@ -49,4 +49,13 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get addTransaction => 'Transaktion hinzufügen';
+
+  @override
+  String get transactionAdded => 'Transaction added successfully!';
+
+  @override
+  String get transactionUpdated => 'Transaction updated successfully!';
+
+  @override
+  String get transactionDeleted => 'Transaction deleted successfully!';
 }
