@@ -10,6 +10,7 @@ import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:expense/features/notifications/engine/pattern_detector.dart';
 import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
+import 'package:expense/features/settings/presentation/providers/settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -119,8 +120,9 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       final gemini = ref.read(geminiDatasourceProvider);
       final history = ref.read(chatMessagesProvider);
       final expenses = ref.read(expensesStreamProvider).valueOrNull ?? [];
+      final language = ref.read(localeProvider).languageCode;
       
-      final responseStr = await gemini.sendChat(text, history, expenses);
+      final responseStr = await gemini.sendChat(text, history, expenses, language);
       
       // Process potential database transactions from the bot reply
       final cleanResponse = await _processTransactionCommands(responseStr);
@@ -136,8 +138,16 @@ class _AiChatScreenState extends ConsumerState<AiChatScreen> {
       _scrollToBottom();
     } catch (e) {
       if (mounted) {
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to connect: $e')),
+          SnackBar(
+            content: Text(
+              errorMsg,
+              style: AppTextStyles.bodySm(color: Colors.white),
+            ),
+            backgroundColor: AppColors.getDanger(context),
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     } finally {

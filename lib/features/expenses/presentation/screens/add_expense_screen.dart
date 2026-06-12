@@ -74,6 +74,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _noteController = TextEditingController();
+  final _customCategoryController = TextEditingController();
   final _amountController = TextEditingController();
   final _amountFocusNode = FocusNode();
 
@@ -149,7 +150,6 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       final exp = widget.existingExpense!;
       _amountController.text = exp.amount.toStringAsFixed(exp.amount % 1 == 0 ? 0 : 2);
       _titleController.text = exp.title;
-      _noteController.text = exp.note ?? '';
       _selectedCategory = exp.category;
       _selectedDateTime = exp.date;
       _selectedType = exp.type;
@@ -157,6 +157,17 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
       if (exp.receiptImageUrl != null && exp.receiptImageUrl!.isNotEmpty) {
         _selectedReceiptImage = XFile(exp.receiptImageUrl!);
       }
+      
+      String noteText = exp.note ?? '';
+      if (_selectedCategory == ExpenseCategory.other && noteText.startsWith('[Category: ')) {
+        final closingBracketIndex = noteText.indexOf(']');
+        if (closingBracketIndex != -1) {
+          final customCategory = noteText.substring(11, closingBracketIndex);
+          _customCategoryController.text = customCategory;
+          noteText = noteText.substring(closingBracketIndex + 1).trim();
+        }
+      }
+      _noteController.text = noteText;
     }
   }
 
@@ -166,6 +177,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     _recordingTimer?.cancel();
     _titleController.dispose();
     _noteController.dispose();
+    _customCategoryController.dispose();
     _amountController.dispose();
     _amountFocusNode.dispose();
     super.dispose();
@@ -184,16 +196,27 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         final gemini = ref.read(geminiDatasourceProvider);
         final predictedCategoryStr = await gemini.predictCategory(value.trim());
         
-        final predictedCategory = ExpenseCategory.values.firstWhere(
-          (e) => e.name == predictedCategoryStr,
-          orElse: () => ExpenseCategory.other,
-        );
+        ExpenseCategory predictedCategory;
+        String? customCategory;
+        
+        if (predictedCategoryStr.startsWith('other:')) {
+          predictedCategory = ExpenseCategory.other;
+          customCategory = predictedCategoryStr.substring(6).trim();
+        } else {
+          predictedCategory = ExpenseCategory.values.firstWhere(
+            (e) => e.name == predictedCategoryStr,
+            orElse: () => ExpenseCategory.other,
+          );
+        }
 
         if (mounted) {
           final allowedCategories = _getCategoriesForType(_selectedType);
           setState(() {
             if (allowedCategories.contains(predictedCategory)) {
               _selectedCategory = predictedCategory;
+              if (predictedCategory == ExpenseCategory.other && customCategory != null && customCategory.isNotEmpty) {
+                _customCategoryController.text = customCategory;
+              }
             } else {
               _selectedCategory = allowedCategories.contains(ExpenseCategory.other)
                   ? ExpenseCategory.other
@@ -207,7 +230,9 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                 children: [
                   const Icon(Icons.auto_awesome, color: Colors.amber, size: 16),
                   const SizedBox(width: 8),
-                  Text('AI auto-selected: ${_formatEnumName(_selectedCategory.name)}'),
+                  Text(customCategory != null 
+                      ? 'AI auto-selected: Other ($customCategory)'
+                      : 'AI auto-selected: ${_formatEnumName(_selectedCategory.name)}'),
                 ],
               ),
               duration: const Duration(seconds: 2),
@@ -448,6 +473,32 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                             return null;
                           },
                         ),
+                        if (_selectedCategory == ExpenseCategory.other) ...[
+                          const SizedBox(height: 16),
+                          Text(
+                            'CUSTOM CATEGORY',
+                            style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                          ),
+                          const SizedBox(height: 8),
+                          TextFormField(
+                            controller: _customCategoryController,
+                            decoration: InputDecoration(
+                              hintText: 'Enter custom category (e.g. Rent, Subscription, Gym)',
+                              filled: true,
+                              fillColor: AppColors.getBgSunken(context),
+                              prefixIcon: const Icon(Icons.label_outline),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: AppColors.getBrandPrimary(context), width: 1.5),
+                              ),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            ),
+                          ),
+                        ],
                         const SizedBox(height: 16),
                         Text(
                           'NOTE',
@@ -676,6 +727,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: ChoiceChip(
+                                  showCheckmark: false,
                                   avatar: Icon(
                                     _getCategoryIcon(category),
                                     size: 14,
@@ -1070,7 +1122,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         final imageBytes = await file.readAsBytes();
         final gemini = ref.read(geminiDatasourceProvider);
         
-        final jsonResult = await gemini.analyzeReceiptImage(imageBytes, 'image/jpeg');
+        final language = ref.read(localeProvider).languageCode;
+        final jsonResult = await gemini.analyzeReceiptImage(imageBytes, 'image/jpeg', language);
         final data = jsonDecode(jsonResult) as Map<String, dynamic>;
         
         final parsedTitle = data['title'] as String?;
@@ -1438,7 +1491,8 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     if (hasApiKey) {
       try {
         final gemini = ref.read(geminiDatasourceProvider);
-        final jsonResult = await gemini.parseExpenseFromText(textToParse);
+        final language = ref.read(localeProvider).languageCode;
+        final jsonResult = await gemini.parseExpenseFromText(textToParse, language);
         final data = jsonDecode(jsonResult) as Map<String, dynamic>;
 
         final parsedTitle = data['title'] as String?;
@@ -1541,11 +1595,20 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
     final userId = currentUser?.id ?? '';
     final currencyCode = ref.read(currencyProvider);
 
+    final noteText = _noteController.text.trim();
+    final customCategory = _customCategoryController.text.trim();
+    String? noteToSave;
+    if (_selectedCategory == ExpenseCategory.other && customCategory.isNotEmpty) {
+      noteToSave = '[Category: $customCategory]${noteText.isEmpty ? "" : " $noteText"}';
+    } else {
+      noteToSave = noteText.isEmpty ? null : noteText;
+    }
+
     if (_isEditMode) {
       final updated = widget.existingExpense!.copyWith(
         amount: amount,
         title: _titleController.text.trim(),
-        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+        note: noteToSave,
         category: _selectedCategory,
         date: _selectedDateTime,
         type: _selectedType,
@@ -1565,7 +1628,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         category: _selectedCategory,
         date: _selectedDateTime,
         title: _titleController.text.trim(),
-        note: _noteController.text.trim().isEmpty ? null : _noteController.text.trim(),
+        note: noteToSave,
         receiptImageUrl: _selectedReceiptImage?.path,
         paymentSystem: _selectedPaymentSystem,
         type: _selectedType,
@@ -1609,6 +1672,7 @@ class _AddExpenseScreenState extends ConsumerState<AddExpenseScreen> {
         // Clear form fields
         _titleController.clear();
         _noteController.clear();
+        _customCategoryController.clear();
         _amountController.clear();
         
         setState(() {

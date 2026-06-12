@@ -510,30 +510,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               AppLocalizations.of(context)!.spendingBreakdown.toUpperCase(),
                               style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                             ),
-                            GestureDetector(
-                              onTap: () => context.push('/budgets'),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.getBrandPrimary(context).withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'Manage Budgets',
-                                      style: AppTextStyles.captionBold(
-                                        color: AppColors.getBrandPrimary(context),
-                                      ),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Material(
+                                color: AppColors.getBrandPrimary(context).withOpacity(0.08),
+                                child: InkWell(
+                                  onTap: () => context.push('/budgets'),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'Manage Budgets',
+                                          style: AppTextStyles.captionBold(
+                                            color: AppColors.getBrandPrimary(context),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Icon(
+                                          Icons.chevron_right_rounded,
+                                          size: 14,
+                                          color: AppColors.getBrandPrimary(context),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 2),
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      size: 14,
-                                      color: AppColors.getBrandPrimary(context),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),
@@ -635,32 +637,32 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               AppLocalizations.of(context)!.recentTransactions.toUpperCase(),
                               style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                // Clear filter or go to insights
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                decoration: BoxDecoration(
-                                  color: AppColors.getBrandPrimary(context).withOpacity(0.08),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      'See All',
-                                      style: AppTextStyles.captionBold(
-                                        color: AppColors.getBrandPrimary(context),
-                                      ),
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(16),
+                              child: Material(
+                                color: AppColors.getBrandPrimary(context).withOpacity(0.08),
+                                child: InkWell(
+                                  onTap: () => context.push('/analytics'),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          'See All',
+                                          style: AppTextStyles.captionBold(
+                                            color: AppColors.getBrandPrimary(context),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 2),
+                                        Icon(
+                                          Icons.chevron_right_rounded,
+                                          size: 14,
+                                          color: AppColors.getBrandPrimary(context),
+                                        ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 2),
-                                    Icon(
-                                      Icons.chevron_right_rounded,
-                                      size: 14,
-                                      color: AppColors.getBrandPrimary(context),
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),

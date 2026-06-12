@@ -1,16 +1,60 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:expense/features/ai_insights/domain/models/chat_message.dart';
 import 'package:expense/features/ai_insights/domain/models/gemini_prompts.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:google_generative_ai/google_generative_ai.dart';
-
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GeminiDatasource {
-
   GeminiDatasource({required this.apiKey});
   final String apiKey;
 
+  Future<void> _checkRateLimit() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final now = DateTime.now();
+
+      // 1. Min interval cooldown check (e.g., 2 seconds to prevent rapid spamming)
+      final lastCallMs = prefs.getInt('gemini_last_call_time');
+      if (lastCallMs != null) {
+        final lastCallTime = DateTime.fromMillisecondsSinceEpoch(lastCallMs);
+        if (now.difference(lastCallTime).inSeconds < 2) {
+          throw Exception('Please wait a moment before making another request.');
+        }
+      }
+
+      // 2. Daily limit check (maximum 60 requests per day)
+      final todayStr = '${now.year}-${now.month}-${now.day}';
+      final lastSavedDate = prefs.getString('gemini_limit_date');
+      int count = prefs.getInt('gemini_limit_count') ?? 0;
+
+      if (lastSavedDate == todayStr) {
+        if (count >= 60) {
+          throw Exception('Daily AI usage limit reached (60 requests/day). Please try again tomorrow.');
+        }
+        count++;
+      } else {
+        // New day, reset counter
+        count = 1;
+      }
+
+      // Save updated limits
+      await prefs.setInt('gemini_last_call_time', now.millisecondsSinceEpoch);
+      await prefs.setString('gemini_limit_date', todayStr);
+      await prefs.setInt('gemini_limit_count', count);
+    } catch (e) {
+      if (e.toString().contains('limit reached') || e.toString().contains('wait a moment')) {
+        rethrow;
+      }
+      // Fallback on preference storage errors to avoid blocking the user
+    }
+  }
+
   Future<GenerativeModel> _getModel({String? systemInstruction}) async {
+    // Enforce usage protection and rate limits
+    await _checkRateLimit();
+
     // 1. Check if the user has entered their own API Key locally (Hermes-like flow)
     if (apiKey.isNotEmpty) {
       return GenerativeModel(
@@ -45,12 +89,12 @@ class GeminiDatasource {
       ]);
       return response.text?.trim() ?? 'other';
     } catch (e) {
-      print(r'Auto-categorize failed: $e');
+      print('Auto-categorize failed: $e');
       return 'other';
     }
   }
 
-  Future<String> analyzeReceiptImage(Uint8List imageBytes, String mimeType) async {
+  Future<String> analyzeReceiptImage(Uint8List imageBytes, String mimeType, String language) async {
     try {
       final model = await _getModel();
       final response = await model.generateContent([
@@ -60,7 +104,8 @@ class GeminiDatasource {
               '2. Total amount charged (under "amount" field as a float/double) '
               '3. Main category of purchases (under "category" field, matching one of these values: food, transport, utilities, entertainment, shopping, health, education, other). '
               '4. A concise text summary of items, quantities, and individual prices (under "summary" field). '
-              'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "summary". Do not include markdown code block formatting or explanations. Just raw JSON.'),
+              'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "summary". Do not include markdown code block formatting or explanations. Just raw JSON. '
+              'Important: The "summary" description must be in the language corresponding to language code: "$language".'),
           DataPart(mimeType, imageBytes),
         ]),
       ]);
@@ -71,15 +116,24 @@ class GeminiDatasource {
     }
   }
 
-  Future<String> generateMonthlySummary(String expensesJson) async {
+  Future<String> generateMonthlySummary(String expensesJson, String language) async {
     try {
       final model = await _getModel();
       final response = await model.generateContent([
-        Content.text(GeminiPrompts.monthlySummary(expensesJson)),
+        Content.text(GeminiPrompts.monthlySummary(expensesJson, language)),
       ]);
-      return response.text?.trim() ?? 'Unable to generate summary.';
+      return response.text?.trim() ?? '{}';
     } catch (e) {
-      return 'Failed to analyze expenses. Please try again later.';
+      final isRateLimit = e.toString().contains('limit reached') || e.toString().contains('wait a moment');
+      final errorMsg = isRateLimit 
+          ? e.toString().replaceAll('Exception: ', '') 
+          : 'Failed to analyze expenses. Please try again later.';
+      return jsonEncode({
+        'summary': errorMsg,
+        'tips': [
+          {'type': 'warning', 'text': errorMsg}
+        ]
+      });
     }
   }
 
@@ -87,11 +141,12 @@ class GeminiDatasource {
     String category,
     double spent,
     double limit,
+    String language,
   ) async {
     try {
       final model = await _getModel();
       final response = await model.generateContent([
-        Content.text(GeminiPrompts.budgetAdvice(category, spent, limit)),
+        Content.text(GeminiPrompts.budgetAdvice(category, spent, limit, language)),
       ]);
       return response.text?.trim() ?? 'Keep an eye on your budget!';
     } catch (e) {
@@ -103,10 +158,11 @@ class GeminiDatasource {
     String message,
     List<ChatMessage> history,
     List<Expense> expenses,
+    String language,
   ) async {
     try {
       final model = await _getModel(
-        systemInstruction: GeminiPrompts.systemChatPromptWithExpenses(expenses),
+        systemInstruction: GeminiPrompts.systemChatPromptWithExpenses(expenses, language),
       );
       
       // Limit history passed to Gemini to prevent exceeding context limits/cost
@@ -143,11 +199,12 @@ class GeminiDatasource {
   Future<String> generateNotificationCopy(
     String trigger,
     String context,
+    String language,
   ) async {
     try {
       final model = await _getModel();
       final response = await model.generateContent([
-        Content.text(GeminiPrompts.notificationCopy(trigger, context)),
+        Content.text(GeminiPrompts.notificationCopy(trigger, context, language)),
       ]);
       return response.text?.trim() ?? trigger;
     } catch (e) {
@@ -155,7 +212,7 @@ class GeminiDatasource {
     }
   }
 
-  Future<String> parseExpenseFromText(String text) async {
+  Future<String> parseExpenseFromText(String text, String language) async {
     try {
       final model = await _getModel();
       final response = await model.generateContent([
@@ -165,12 +222,28 @@ class GeminiDatasource {
             '2. Transaction amount (under "amount" key as a float/double) '
             '3. Main category (under "category" key, matching one of these values: food, transport, utilities, entertainment, shopping, health, education, other). '
             '4. Transaction type (under "type" key, matching one of these values: expense, income, borrow, lend). '
-            'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "type". Do not include markdown code block formatting or explanations. Just raw JSON.'),
+            'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "type". Do not include markdown code block formatting or explanations. Just raw JSON. '
+            'Important: The transaction "title" should be in the language corresponding to language code: "$language".'),
       ]);
       return response.text?.trim() ?? '{}';
     } catch (e) {
       print('Gemini parseExpenseFromText error: $e');
       rethrow;
+    }
+  }
+
+  Future<String> generateDailySummary(String transactionsJson, String language) async {
+    try {
+      final model = await _getModel();
+      final response = await model.generateContent([
+        Content.text(GeminiPrompts.dailySummary(transactionsJson, language)),
+      ]);
+      return response.text?.trim() ?? 'No summary available today.';
+    } catch (e) {
+      if (e.toString().contains('limit reached') || e.toString().contains('wait a moment')) {
+        return e.toString().replaceAll('Exception: ', '');
+      }
+      return "Failed to analyze today's expenses.";
     }
   }
 }

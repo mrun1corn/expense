@@ -5,23 +5,71 @@ import 'package:expense/features/ai_insights/presentation/screens/ai_auth_fallba
 import 'package:expense/features/expenses/domain/models/expense.dart';
 import 'package:expense/features/expenses/presentation/providers/expense_provider.dart';
 import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
+import 'package:expense/features/settings/presentation/providers/settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
-final AutoDisposeFutureProvider<String> monthlySummaryProvider = FutureProvider.autoDispose<String>((ref) async {
+class AiInsightData {
+  final String summary;
+  final List<AiTip> tips;
+
+  AiInsightData({required this.summary, required this.tips});
+
+  factory AiInsightData.fromJson(Map<String, dynamic> json) {
+    final summary = json['summary'] as String? ?? 'No summary generated.';
+    final tipsJson = json['tips'] as List<dynamic>? ?? [];
+    final tips = tipsJson.map((t) => AiTip.fromJson(t as Map<String, dynamic>)).toList();
+    return AiInsightData(summary: summary, tips: tips);
+  }
+
+  factory AiInsightData.fallback(String message) {
+    return AiInsightData(
+      summary: message,
+      tips: [
+        AiTip(type: 'info', text: 'Track your expenses daily to get dynamic AI spending tips and insights.'),
+      ],
+    );
+  }
+}
+
+class AiTip {
+  final String type; // 'warning', 'success', 'info'
+  final String text;
+
+  AiTip({required this.type, required this.text});
+
+  factory AiTip.fromJson(Map<String, dynamic> json) {
+    return AiTip(
+      type: json['type'] as String? ?? 'info',
+      text: json['text'] as String? ?? '',
+    );
+  }
+}
+
+final AutoDisposeFutureProvider<AiInsightData> monthlySummaryProvider = FutureProvider.autoDispose<AiInsightData>((ref) async {
   final expenses = await ref.watch(last60DaysProvider.future);
   
   if (expenses.isEmpty) {
-    return 'Not enough data this month to generate an AI summary.';
+    return AiInsightData(
+      summary: 'Not enough data this month to generate an AI summary.',
+      tips: [
+        AiTip(type: 'info', text: 'Add transactions on the manual entry or scan tab to view AI tips.'),
+      ],
+    );
   }
 
   final now = DateTime.now();
   final thisMonth = expenses.where((e) => e.date.month == now.month && e.date.year == now.year && !e.isDeleted).toList();
   
   if (thisMonth.isEmpty) {
-    return 'You have no recorded spending this month. Start tracking to get insights!';
+    return AiInsightData(
+      summary: 'You have no recorded spending this month. Start tracking to get insights!',
+      tips: [
+        AiTip(type: 'info', text: 'Add transactions to see dynamic budget and spending patterns.'),
+      ],
+    );
   }
 
   final summaryJson = jsonEncode(thisMonth.map((e) => {
@@ -31,8 +79,54 @@ final AutoDisposeFutureProvider<String> monthlySummaryProvider = FutureProvider.
     'date': e.date.toIso8601String(),
   }).toList());
 
+  final language = ref.watch(localeProvider).languageCode;
   final gemini = ref.watch(geminiDatasourceProvider);
-  return gemini.generateMonthlySummary(summaryJson);
+  
+  try {
+    final responseStr = await gemini.generateMonthlySummary(summaryJson, language);
+    final decoded = jsonDecode(responseStr) as Map<String, dynamic>;
+    return AiInsightData.fromJson(decoded);
+  } catch (e) {
+    return AiInsightData.fallback(
+      e.toString().contains('limit reached') || e.toString().contains('wait a moment')
+          ? e.toString().replaceAll('Exception: ', '')
+          : 'Failed to analyze expenses. Please try again later.'
+    );
+  }
+});
+
+final AutoDisposeFutureProvider<String> dailySummaryProvider = FutureProvider.autoDispose<String>((ref) async {
+  final expenses = await ref.watch(last60DaysProvider.future);
+  
+  final now = DateTime.now();
+  final todayTransactions = expenses.where((e) =>
+      e.date.day == now.day &&
+      e.date.month == now.month &&
+      e.date.year == now.year &&
+      !e.isDeleted).toList();
+
+  if (todayTransactions.isEmpty) {
+    return 'No transactions recorded today. Track some expenses to get a daily recap!';
+  }
+
+  final summaryJson = jsonEncode(todayTransactions.map((e) => {
+    'title': e.title,
+    'amount': e.amount,
+    'category': e.category.name,
+    'date': e.date.toIso8601String(),
+    'type': e.type.name,
+  }).toList());
+
+  final language = ref.watch(localeProvider).languageCode;
+  final gemini = ref.watch(geminiDatasourceProvider);
+
+  try {
+    return await gemini.generateDailySummary(summaryJson, language);
+  } catch (e) {
+    return e.toString().contains('limit reached') || e.toString().contains('wait a moment')
+        ? e.toString().replaceAll('Exception: ', '')
+        : 'Failed to generate daily recap.';
+  }
 });
 
 class AiInsightsScreen extends ConsumerWidget {
@@ -104,6 +198,7 @@ class AiInsightsScreen extends ConsumerWidget {
     }
 
     final summaryAsync = ref.watch(monthlySummaryProvider);
+    final dailySummaryAsync = ref.watch(dailySummaryProvider);
     final expensesAsync = ref.watch(expensesStreamProvider);
 
     return Scaffold(
@@ -149,6 +244,57 @@ class AiInsightsScreen extends ConsumerWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+                // Today's Recap Card
+                Container(
+                  width: double.infinity,
+                  decoration: AppShadows.getCardDecoration(context, radius: 16),
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "TODAY'S RECAP",
+                            style: AppTextStyles.overline(
+                              color: AppColors.getFgTertiary(context),
+                            ),
+                          ),
+                          Icon(
+                            Icons.today_outlined,
+                            size: 16,
+                            color: AppColors.getBrandPrimary(context),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      dailySummaryAsync.when(
+                        data: (summary) => Text(
+                          summary,
+                          style: AppTextStyles.bodyMd(
+                            color: AppColors.getFgPrimary(context),
+                          ).copyWith(height: 1.5),
+                        ),
+                        loading: () => const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          child: Center(
+                            child: SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        ),
+                        error: (err, _) => Text(
+                          'Could not generate daily recap: $err',
+                          style: TextStyle(color: AppColors.getDanger(context)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
                 // June Recap Card (hero/dark)
                 Container(
                   width: double.infinity,
@@ -171,7 +317,7 @@ class AiInsightsScreen extends ConsumerWidget {
                       const SizedBox(height: 12),
                       summaryAsync.when(
                         data: (summary) => Text(
-                          summary,
+                          summary.summary,
                           style: AppTextStyles.bodyMd(
                             color: AppColors.getHeroFg(context),
                           ).copyWith(height: 1.5),
@@ -343,18 +489,54 @@ class AiInsightsScreen extends ConsumerWidget {
                   style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
                 ),
                 const SizedBox(height: 12),
-                _buildTipTile(
-                  context,
-                  icon: Icons.lightbulb_outline,
-                  color: AppColors.getWarning(context),
-                  text: r'Your food expenditure is 15% higher than last week. Cooking at home two more days could save you up to $45.',
-                ),
-                const SizedBox(height: 10),
-                _buildTipTile(
-                  context,
-                  icon: Icons.trending_down,
-                  color: AppColors.getSuccess(context),
-                  text: 'Great work! You have lowered your entertainment costs by 8% this month, keeping your overall budget safe.',
+                summaryAsync.when(
+                  data: (insightData) {
+                    if (insightData.tips.isEmpty) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        child: Text(
+                          'No dynamic spending tips available yet.',
+                          style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
+                        ),
+                      );
+                    }
+                    return Column(
+                      children: insightData.tips.map((tip) {
+                        IconData icon;
+                        Color color;
+                        if (tip.type == 'warning') {
+                          icon = Icons.lightbulb_outline;
+                          color = AppColors.getWarning(context);
+                        } else if (tip.type == 'success') {
+                          icon = Icons.trending_down;
+                          color = AppColors.getSuccess(context);
+                        } else {
+                          icon = Icons.info_outline;
+                          color = AppColors.getInfo(context);
+                        }
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 10),
+                          child: _buildTipTile(
+                            context,
+                            icon: icon,
+                            color: color,
+                            text: tip.text,
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
+                  loading: () => const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                  error: (err, _) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(
+                      'Failed to load tips.',
+                      style: AppTextStyles.bodySm(color: AppColors.getDanger(context)),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 24),
 

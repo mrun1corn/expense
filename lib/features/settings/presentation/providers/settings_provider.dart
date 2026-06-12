@@ -81,14 +81,20 @@ class CountryNotifier extends StateNotifier<String> {
     final autoDetected = PaymentSystemsManager.getDeviceCountryCode();
     final country = prefs.getString(_prefKey) ?? autoDetected;
     state = country;
-    _ref.read(localeProvider.notifier).updateLocaleForCountry(country);
+    final hasManualLocale = prefs.getBool('has_manual_locale') ?? false;
+    if (!hasManualLocale) {
+      _ref.read(localeProvider.notifier).updateLocaleForCountry(country);
+    }
   }
 
   Future<void> setCountry(String countryCode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKey, countryCode);
     state = countryCode;
-    _ref.read(localeProvider.notifier).updateLocaleForCountry(countryCode);
+    final hasManualLocale = prefs.getBool('has_manual_locale') ?? false;
+    if (!hasManualLocale) {
+      _ref.read(localeProvider.notifier).updateLocaleForCountry(countryCode);
+    }
   }
 }
 
@@ -127,6 +133,19 @@ class LocaleNotifier extends StateNotifier<Locale> {
     await prefs.setString(_prefKey, locale.languageCode);
     state = locale;
     Intl.defaultLocale = locale.languageCode;
+  }
+
+  Future<void> setManualLocale(Locale locale) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_manual_locale', true);
+    await setLocale(locale);
+  }
+
+  Future<void> clearManualLocale() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('has_manual_locale');
+    final country = _ref.read(countryCodeProvider);
+    updateLocaleForCountry(country);
   }
 
   void updateLocaleForCountry(String countryCode) {

@@ -160,6 +160,115 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  String _getLanguageName(String languageCode) {
+    switch (languageCode) {
+      case 'en': return 'English';
+      case 'bn': return 'Bengali (বাংলা)';
+      case 'es': return 'Spanish (Español)';
+      case 'fr': return 'French (Français)';
+      case 'de': return 'German (Deutsch)';
+      case 'it': return 'Italian (Italiano)';
+      case 'ja': return 'Japanese (日本語)';
+      case 'ko': return 'Korean (한국어)';
+      case 'pt': return 'Portuguese (Português)';
+      case 'ru': return 'Russian (Русский)';
+      case 'zh': return 'Chinese (中文)';
+      case 'ar': return 'Arabic (العربية)';
+      case 'nl': return 'Dutch (Nederlands)';
+      case 'no': return 'Norwegian (Norsk)';
+      case 'pl': return 'Polish (Polski)';
+      case 'ro': return 'Romanian (Română)';
+      case 'sr': return 'Serbian (Српски)';
+      case 'sv': return 'Swedish (Svenska)';
+      case 'tr': return 'Turkish (Türkçe)';
+      case 'uk': return 'Ukrainian (Українська)';
+      case 'vi': return 'Vietnamese (Tiếng Việt)';
+      case 'af': return 'Afrikaans';
+      case 'ca': return 'Catalan (Català)';
+      case 'cs': return 'Czech (Čeština)';
+      case 'da': return 'Danish (Dansk)';
+      case 'el': return 'Greek (Ελληνικά)';
+      case 'fi': return 'Finnish (Suomi)';
+      case 'he': return 'Hebrew (עברית)';
+      case 'hu': return 'Hungarian (Magyar)';
+      default: return languageCode.toUpperCase();
+    }
+  }
+
+  void _showLanguageBottomSheet(BuildContext context) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: AppColors.getBgBase(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            final locales = List<Locale>.from(AppLocalizations.supportedLocales)
+              ..sort((a, b) => _getLanguageName(a.languageCode)
+                  .compareTo(_getLanguageName(b.languageCode)));
+
+            return Column(
+              children: [
+                const SizedBox(height: 8),
+                Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[400],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Select App Language',
+                    style: AppTextStyles.headingMd(color: AppColors.getFgPrimary(context)),
+                  ),
+                ),
+                Expanded(
+                  child: ListView.builder(
+                    controller: scrollController,
+                    itemCount: locales.length,
+                    itemBuilder: (context, index) {
+                      final locale = locales[index];
+                      final name = _getLanguageName(locale.languageCode);
+                      final isSelected = ref.read(localeProvider).languageCode == locale.languageCode;
+
+                      return ListTile(
+                        title: Text(
+                          name,
+                          style: AppTextStyles.bodyMd(
+                            color: AppColors.getFgPrimary(context),
+                          ).copyWith(
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        trailing: isSelected
+                            ? Icon(Icons.check_circle, color: AppColors.getBrandPrimary(context))
+                            : null,
+                        onTap: () {
+                          ref.read(localeProvider.notifier).setManualLocale(locale);
+                          Navigator.pop(context);
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final savedKey = ref.watch(apiKeyProvider);
@@ -417,6 +526,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _showRegionCurrencyBottomSheet(context),
+            ),
+          ),
+
+          // App Language Selector
+          Container(
+            decoration: AppShadows.getCardDecoration(context, radius: 12),
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              leading: const Icon(Icons.language_outlined),
+              title: Text(
+                'App Language',
+                style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
+              ),
+              subtitle: Consumer(
+                builder: (context, ref, child) {
+                  final currentLocale = ref.watch(localeProvider);
+                  return Text(
+                    _getLanguageName(currentLocale.languageCode),
+                    style: AppTextStyles.caption(color: AppColors.getFgSecondary(context)),
+                  );
+                },
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _showLanguageBottomSheet(context),
             ),
           ),
 
