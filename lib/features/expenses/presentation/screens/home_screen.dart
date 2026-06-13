@@ -25,6 +25,13 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   DateTime _selectedMonth = DateTime.now();
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'GOOD MORNING';
+    if (hour < 17) return 'GOOD AFTERNOON';
+    return 'GOOD EVENING';
+  }
+
   Future<void> _showMonthPicker(BuildContext context) async {
     final now = DateTime.now();
     final picked = await showDatePicker(
@@ -271,7 +278,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     SliverToBoxAdapter(
                       child: ScreenHeader(
                         title: DateFormat('MMMM yyyy').format(_selectedMonth),
-                        overline: 'GOOD MORNING, ${userName.toUpperCase()}',
+                        overline: '${_getGreeting()}, ${userName.toUpperCase()}',
                         action: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

@@ -10,6 +10,14 @@ class GeminiDatasource {
   GeminiDatasource({required this.apiKey});
   final String apiKey;
 
+  String _cleanJson(String text) {
+    var s = text.trim();
+    if (s.startsWith('```json')) s = s.substring(7);
+    else if (s.startsWith('```')) s = s.substring(3);
+    if (s.endsWith('```')) s = s.substring(0, s.length - 3);
+    return s.trim();
+  }
+
   Future<void> _checkRateLimit() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -109,7 +117,7 @@ class GeminiDatasource {
           DataPart(mimeType, imageBytes),
         ]),
       ]);
-      return response.text?.trim() ?? '{}';
+      return _cleanJson(response.text?.trim() ?? '{}');
     } catch (e) {
       print('Gemini analyzeReceiptImage error: $e');
       rethrow;
@@ -129,7 +137,7 @@ class GeminiDatasource {
             'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "summary". Do not include markdown code block formatting or explanations. Just raw JSON. '
             'Important: The "summary" description must be in the language corresponding to language code: "$language".'),
       ]);
-      return response.text?.trim() ?? '{}';
+      return _cleanJson(response.text?.trim() ?? '{}');
     } catch (e) {
       print('Gemini analyzeReceiptText error: $e');
       rethrow;
@@ -142,7 +150,7 @@ class GeminiDatasource {
       final response = await model.generateContent([
         Content.text(GeminiPrompts.monthlySummary(expensesJson, language)),
       ]);
-      return response.text?.trim() ?? '{}';
+      return _cleanJson(response.text?.trim() ?? '{}');
     } catch (e) {
       final isRateLimit = e.toString().contains('limit reached') || e.toString().contains('wait a moment');
       final errorMsg = isRateLimit 
@@ -245,7 +253,7 @@ class GeminiDatasource {
             'Return ONLY a clean JSON object containing keys: "title", "amount", "category", "type". Do not include markdown code block formatting or explanations. Just raw JSON. '
             'Important: The transaction "title" should be in the language corresponding to language code: "$language".'),
       ]);
-      return response.text?.trim() ?? '{}';
+      return _cleanJson(response.text?.trim() ?? '{}');
     } catch (e) {
       print('Gemini parseExpenseFromText error: $e');
       rethrow;
@@ -258,7 +266,7 @@ class GeminiDatasource {
       final response = await model.generateContent([
         Content.text(GeminiPrompts.dailySummary(transactionsJson, language)),
       ]);
-      return response.text?.trim() ?? 'No summary available today.';
+      return _cleanJson(response.text?.trim() ?? '{}');
     } catch (e) {
       if (e.toString().contains('limit reached') || e.toString().contains('wait a moment')) {
         return e.toString().replaceAll('Exception: ', '');

@@ -18,45 +18,34 @@ def process_icon():
     hex_bg = f"#{bg_color[0]:02X}{bg_color[1]:02X}{bg_color[2]:02X}"
     print(f"HEX Background Color: {hex_bg}")
 
-    # We want to find the bounding box of the non-background pixels (the white line art)
-    # The line art is white (or close to white), let's find pixels that differ significantly from background
-    min_x, min_y, max_x, max_y = width, height, 0, 0
-    tolerance = 30  # Color distance tolerance
-
+    # Make background completely transparent
+    tolerance = 30
     pixels = img.load()
-    non_bg_pixels = []
-
     for y in range(height):
         for x in range(width):
             r, g, b, a = pixels[x, y]
-            # Euclidean distance in color space
             dist = ((r - bg_color[0])**2 + (g - bg_color[1])**2 + (b - bg_color[2])**2)**0.5
-            if dist > tolerance:
-                min_x = min(min_x, x)
-                min_y = min(min_y, y)
-                max_x = max(max_x, x)
-                max_y = max(max_y, y)
-                non_bg_pixels.append((x, y, (r, g, b, a)))
-
-    if not non_bg_pixels:
+            if dist <= tolerance:
+                pixels[x, y] = (0, 0, 0, 0)
+    
+    # Now get the bounding box of the non-transparent pixels
+    bbox = img.getbbox()
+    if not bbox:
         print("Error: Could not find any line art (all pixels match background).")
         return
-
-    # Crop the line art
-    art_w = max_x - min_x + 1
-    art_h = max_y - min_y + 1
+    
+    min_x, min_y, max_x, max_y = bbox
+    art_w = max_x - min_x
+    art_h = max_y - min_y
     print(f"Line art bounding box: x={min_x}..{max_x}, y={min_y}..{max_y} (size {art_w}x{art_h})")
     
-    art_img = Image.new("RGBA", (art_w, art_h), (0, 0, 0, 0))
-    art_pixels = art_img.load()
-    for x, y, col in non_bg_pixels:
-        art_pixels[x - min_x, y - min_y] = col
+    art_img = img.crop(bbox)
 
     # Resize the line art so it fits nicely in the safe zone of 512x512 canvas
     # The safe circle diameter is 338 pixels (66% of 512)
     # Let's scale it so the max dimension is 280 pixels, leaving plenty of safe space
     max_dim = 280
-    scale = min(max_dim / art_w, max_dim / art_h)
+    scale = min(max_dim / float(art_w), max_dim / float(art_h))
     new_w = int(art_w * scale)
     new_h = int(art_h * scale)
     

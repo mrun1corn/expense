@@ -3,29 +3,29 @@ import 'package:expense/core/payment/payment_systems_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+late SharedPreferences _prefs;
+
+Future<void> initSettings() async {
+  _prefs = await SharedPreferences.getInstance();
+}
 
 final themeModeProvider = StateNotifierProvider<ThemeModeNotifier, ThemeMode>((ref) {
   return ThemeModeNotifier();
 });
 
 class ThemeModeNotifier extends StateNotifier<ThemeMode> {
-  ThemeModeNotifier() : super(ThemeMode.system) {
-    _loadTheme();
-  }
+  ThemeModeNotifier() : super(_getInitialTheme());
 
   static const _prefKey = 'app_theme_mode';
 
-  Future<void> _loadTheme() async {
-    final prefs = await SharedPreferences.getInstance();
-    final val = prefs.getString(_prefKey);
-    if (val == 'light') {
-      state = ThemeMode.light;
-    } else if (val == 'dark') {
-      state = ThemeMode.dark;
-    } else {
-      state = ThemeMode.system;
-    }
+  static ThemeMode _getInitialTheme() {
+    final val = _prefs.getString(_prefKey);
+    if (val == 'light') return ThemeMode.light;
+    if (val == 'dark') return ThemeMode.dark;
+    return ThemeMode.system;
   }
 
   Future<void> setTheme(ThemeMode mode) async {
@@ -40,21 +40,17 @@ final currencyProvider = StateNotifierProvider<CurrencyNotifier, String>((ref) {
 });
 
 class CurrencyNotifier extends StateNotifier<String> {
-  CurrencyNotifier() : super('USD') {
-    _loadCurrency();
-  }
+  CurrencyNotifier() : super(_getInitialCurrency());
 
   static const _prefKey = 'app_currency';
 
-  Future<void> _loadCurrency() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (prefs.containsKey(_prefKey)) {
-      state = prefs.getString(_prefKey)!;
-    } else {
-      final autoDetected = PaymentSystemsManager.getDeviceCountryCode();
-      final countryData = PaymentSystemsManager.getCountryData(autoDetected);
-      state = countryData?.currencyCode ?? 'USD';
+  static String _getInitialCurrency() {
+    if (_prefs.containsKey(_prefKey)) {
+      return _prefs.getString(_prefKey)!;
     }
+    final autoDetected = PaymentSystemsManager.getDeviceCountryCode();
+    final countryData = PaymentSystemsManager.getCountryData(autoDetected);
+    return countryData?.currencyCode ?? 'USD';
   }
 
   Future<void> setCurrency(String currency) async {
@@ -70,21 +66,19 @@ final countryCodeProvider = StateNotifierProvider<CountryNotifier, String>((ref)
 
 class CountryNotifier extends StateNotifier<String> {
   final Ref _ref;
-  CountryNotifier(this._ref) : super('US') {
-    _loadCountry();
+  CountryNotifier(this._ref) : super(_getInitialCountry()) {
+    // Sync locale if needed
+    final hasManualLocale = _prefs.getBool('has_manual_locale') ?? false;
+    if (!hasManualLocale) {
+      _ref.read(localeProvider.notifier).updateLocaleForCountry(state);
+    }
   }
 
   static const _prefKey = 'app_country_code';
 
-  Future<void> _loadCountry() async {
-    final prefs = await SharedPreferences.getInstance();
+  static String _getInitialCountry() {
     final autoDetected = PaymentSystemsManager.getDeviceCountryCode();
-    final country = prefs.getString(_prefKey) ?? autoDetected;
-    state = country;
-    final hasManualLocale = prefs.getBool('has_manual_locale') ?? false;
-    if (!hasManualLocale) {
-      _ref.read(localeProvider.notifier).updateLocaleForCountry(country);
-    }
+    return _prefs.getString(_prefKey) ?? autoDetected;
   }
 
   Future<void> setCountry(String countryCode) async {
@@ -105,16 +99,15 @@ final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
 class LocaleNotifier extends StateNotifier<Locale> {
   final Ref _ref;
   LocaleNotifier(this._ref) : super(const Locale('en')) {
-    _loadLocale();
+    _initLocale();
   }
 
   static const _prefKey = 'app_locale';
 
-  Future<void> _loadLocale() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _initLocale() {
     Locale loadedLocale;
-    if (prefs.containsKey(_prefKey)) {
-      loadedLocale = Locale(prefs.getString(_prefKey)!);
+    if (_prefs.containsKey(_prefKey)) {
+      loadedLocale = Locale(_prefs.getString(_prefKey)!);
     } else {
       final deviceLocale = ui.PlatformDispatcher.instance.locale;
       if (['en', 'es', 'fr'].contains(deviceLocale.languageCode)) {

@@ -35,6 +35,9 @@ void main() async {
   await NotificationManager.init();
   await NotificationManager.initWorkmanager();
 
+  // Pre-load settings to avoid theme glitch on launch
+  await initSettings();
+
   runApp(
     const ProviderScope(
       child: SmartExpenseApp(),
