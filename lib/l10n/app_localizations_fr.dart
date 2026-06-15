@@ -58,4 +58,17 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get transactionDeleted => 'Transaction deleted successfully!';
+
+  @override
+  String get transactions => 'Transactions';
+
+  @override
+  String get noTransactionsThisMonth =>
+      'No transactions recorded for this month.';
+
+  @override
+  String get deleted => 'Deleted';
+
+  @override
+  String get undo => 'UNDO';
 }

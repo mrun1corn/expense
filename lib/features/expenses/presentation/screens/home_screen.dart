@@ -1,5 +1,4 @@
 import 'package:expense/core/theme/app_theme.dart';
-import 'package:expense/core/payment/payment_systems_manager.dart';
 import 'package:expense/features/auth/presentation/auth_provider.dart';
 import 'package:expense/features/budgets/presentation/providers/budget_provider.dart';
 import 'package:expense/features/expenses/domain/models/expense.dart';
@@ -11,10 +10,11 @@ import 'package:expense/features/settings/presentation/providers/settings_provid
 import 'package:flutter/material.dart';
 import 'package:expense/l10n/app_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import 'package:expense/features/expenses/presentation/widgets/transaction_list_item.dart';
+import 'package:expense/features/expenses/presentation/widgets/expense_ui_utils.dart';
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -48,109 +48,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
   }
 
-  // Visual icons for categories
-  IconData _getCategoryIcon(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.food: return Icons.restaurant;
-      case ExpenseCategory.transport: return Icons.directions_car;
-      case ExpenseCategory.utilities: return Icons.electrical_services;
-      case ExpenseCategory.entertainment: return Icons.movie;
-      case ExpenseCategory.shopping: return Icons.shopping_bag;
-      case ExpenseCategory.health: return Icons.medical_services;
-      case ExpenseCategory.education: return Icons.school;
-      case ExpenseCategory.salary: return Icons.work;
-      case ExpenseCategory.business: return Icons.storefront;
-      case ExpenseCategory.investment: return Icons.trending_up;
-      case ExpenseCategory.gift: return Icons.card_giftcard;
-      case ExpenseCategory.friend: return Icons.people;
-      case ExpenseCategory.bank: return Icons.account_balance;
-      case ExpenseCategory.family: return Icons.house;
-      case ExpenseCategory.other: return Icons.more_horiz;
-    }
-  }
-
-  Color _getCategoryColor(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.food: return Colors.orange;
-      case ExpenseCategory.transport: return Colors.blue;
-      case ExpenseCategory.shopping: return Colors.purple;
-      case ExpenseCategory.utilities: return Colors.amber;
-      case ExpenseCategory.health: return Colors.red;
-      case ExpenseCategory.entertainment: return Colors.green;
-      case ExpenseCategory.education: return Colors.indigo;
-      case ExpenseCategory.salary: return Colors.teal;
-      case ExpenseCategory.business: return Colors.cyan;
-      case ExpenseCategory.investment: return Colors.lightGreen;
-      case ExpenseCategory.gift: return Colors.deepPurple;
-      case ExpenseCategory.friend: return Colors.brown;
-      case ExpenseCategory.bank: return Colors.blueGrey;
-      case ExpenseCategory.family: return Colors.pink;
-      case ExpenseCategory.other: return Colors.grey;
-    }
-  }
-
-  String _formatEnumName(String name) {
-    if (name.isEmpty) return '';
-    return name[0].toUpperCase() + name.substring(1);
-  }
-
-  Widget _buildPaymentSystemBadge(BuildContext context, String systemName) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final type = PaymentSystemsManager.getSystemTypeColor(systemName);
-
-    Color bg;
-    Color fg;
-
-    switch (type) {
-      case 'mfs':
-        bg = isDark ? const Color(0xFF085041) : const Color(0xFFE1F5EE);
-        fg = isDark ? const Color(0xFF9FE1CB) : const Color(0xFF0F6E56);
-        break;
-      case 'rtp':
-        bg = isDark ? const Color(0xFF0C447C) : const Color(0xFFE6F1FB);
-        fg = isDark ? const Color(0xFFB5D4F4) : const Color(0xFF185FA5);
-        break;
-      case 'wallet':
-        bg = isDark ? const Color(0xFF3C3489) : const Color(0xFFEEEDFE);
-        fg = isDark ? const Color(0xFFCECBF6) : const Color(0xFF534AB7);
-        break;
-      case 'bank':
-        bg = isDark ? const Color(0xFF633806) : const Color(0xFFFAEEDA);
-        fg = isDark ? const Color(0xFFFAC775) : const Color(0xFF854F0B);
-        break;
-      case 'neo':
-        bg = isDark ? const Color(0xFF712B13) : const Color(0xFFFAECE7);
-        fg = isDark ? const Color(0xFFF5C4B3) : const Color(0xFF993C1D);
-        break;
-      case 'card':
-        bg = isDark ? const Color(0xFF27500A) : const Color(0xFFEAF3DE);
-        fg = isDark ? const Color(0xFFC0DD97) : const Color(0xFF3B6D11);
-        break;
-      case 'cbdc':
-        bg = isDark ? const Color(0xFF72243E) : const Color(0xFFFBEAF0);
-        fg = isDark ? const Color(0xFFF4C0D1) : const Color(0xFF993556);
-        break;
-      default:
-        bg = isDark ? const Color(0xFF444441) : const Color(0xFFF1EFE8);
-        fg = isDark ? const Color(0xFFD3D1C7) : const Color(0xFF5F5E5A);
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      child: Text(
-        systemName,
-        style: TextStyle(
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
-          color: fg,
-        ),
-      ),
-    );
-  }
+  // We use TransactionListItem for UI now.
 
   void _deleteExpense(WidgetRef ref, Expense exp) {
     ref.read(expenseRepositoryProvider).deleteExpense(exp.id);
@@ -172,7 +70,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Trigger background sync listeners
     ref.watch(activeCloudSyncProvider);
 
-    final expensesAsync = ref.watch(expensesStreamProvider);
+    final expensesAsync = ref.watch(monthlyExpensesStreamProvider(DateTime(_selectedMonth.year, _selectedMonth.month)));
+    final prevMonthExpensesAsync = ref.watch(monthlyExpensesStreamProvider(DateTime(_selectedMonth.year, _selectedMonth.month - 1)));
     final budgetsAsync = ref.watch(budgetsStreamProvider(_selectedMonth));
     final currentUser = ref.watch(authStateProvider).valueOrNull;
     final userName = currentUser?.displayName ?? 'Alex';
@@ -186,7 +85,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         child: RefreshIndicator(
           onRefresh: () async {
             ref
-              ..invalidate(expensesStreamProvider)
+              ..invalidate(monthlyExpensesStreamProvider(DateTime(_selectedMonth.year, _selectedMonth.month)))
               ..invalidate(budgetsStreamProvider(_selectedMonth));
           },
           child: expensesAsync.when(
@@ -194,8 +93,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               data: (budgets) {
                 // Filter this month's expenses
                 final thisMonthExpenses = expenses.where((e) =>
-                    e.date.month == _selectedMonth.month &&
-                    e.date.year == _selectedMonth.year &&
                     !e.isDeleted).toList();
 
                 final now = DateTime.now();
@@ -254,10 +151,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 final remaining = (totalBudgetLimit - totalExpenses).clamp(0.0, double.infinity);
 
                 // Calculate dynamic delta change vs last month
-                final lastMonthDate = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
-                final lastMonthExpensesList = expenses.where((e) =>
-                    e.date.month == lastMonthDate.month &&
-                    e.date.year == lastMonthDate.year &&
+                final prevMonthExpenses = prevMonthExpensesAsync.valueOrNull ?? [];
+                final lastMonthExpensesList = prevMonthExpenses.where((e) =>
                     e.type == TransactionType.expense &&
                     !e.isDeleted).toList();
                 final lastMonthTotal = lastMonthExpensesList.fold<double>(0, (sum, e) => sum + e.amount);
@@ -579,18 +474,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 final cat = entry.key;
                                 final catSpent = entry.value;
                                 final catPercent = totalExpenses > 0 ? (catSpent / totalExpenses) : 0.0;
-                                final catColor = _getCategoryColor(cat);
+                                final catColor = ExpenseUiUtils.getCategoryColor(cat);
 
                                 return Padding(
                                   padding: const EdgeInsets.only(bottom: 12),
                                   child: Row(
                                     children: [
-                                      Icon(_getCategoryIcon(cat), size: 14, color: catColor),
+                                      Icon(ExpenseUiUtils.getCategoryIcon(cat), size: 14, color: catColor),
                                       const SizedBox(width: 8),
                                       SizedBox(
                                         width: 90,
                                         child: Text(
-                                          _formatEnumName(cat.name),
+                                          ExpenseUiUtils.formatEnumName(cat.name),
                                           style: AppTextStyles.bodySm(
                                             color: AppColors.getFgPrimary(context),
                                           ).copyWith(fontWeight: FontWeight.w500),
@@ -693,84 +588,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       )
                     else
                       SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final exp = recentThree[index];
-                                final isExpense = exp.type == TransactionType.expense;
-                                final isIncome = exp.type == TransactionType.income;
-                                final symbol = 0.0.toCurrencySymbol(currencyCode);
-                                final prefix = isIncome ? '+$symbol' : (isExpense ? '-$symbol' : symbol);
-                                final amountColor = isIncome
-                                    ? AppColors.getSuccess(context)
-                                    : (isExpense ? AppColors.getFgPrimary(context) : AppColors.getBrandPrimary(context));
-
-                                return Padding(
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                                  child: Container(
-                                    decoration: AppShadows.getCardDecoration(context, radius: 12),
-                                    child: Slidable(
-                                      key: ValueKey(exp.id),
-                                      endActionPane: ActionPane(
-                                        motion: const BehindMotion(),
-                                        dismissible: DismissiblePane(
-                                          onDismissed: () => _deleteExpense(ref, exp),
-                                        ),
-                                        children: [
-                                          SlidableAction(
-                                            onPressed: (context) => _deleteExpense(ref, exp),
-                                            backgroundColor: AppColors.dangerLight,
-                                            foregroundColor: Colors.white,
-                                            icon: Icons.delete,
-                                            label: 'Delete',
-                                          ),
-                                        ],
-                                      ),
-                                      child: ListTile(
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                                        leading: CircleAvatar(
-                                          backgroundColor: AppColors.getBgSunken(context),
-                                          radius: 18,
-                                          child: Icon(
-                                            _getCategoryIcon(exp.category),
-                                            color: _getCategoryColor(exp.category),
-                                            size: 18,
-                                          ),
-                                        ),
-                                        title: Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                exp.title,
-                                                style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                            if (exp.paymentSystem != null) ...[
-                                              const SizedBox(width: 8),
-                                              _buildPaymentSystemBadge(context, exp.paymentSystem!),
-                                            ],
-                                          ],
-                                        ),
-                                        subtitle: Text(
-                                          '${_formatEnumName(exp.category.name)} · ${DateFormat('h:mm a').format(exp.date)}',
-                                          style: AppTextStyles.bodySm(color: AppColors.getFgSecondary(context)),
-                                        ),
-                                        trailing: Text(
-                                          '$prefix${exp.amount.toStringAsFixed(2)}',
-                                          style: AppTextStyles.monospace(
-                                            14,
-                                            color: amountColor,
-                                            weight: FontWeight.w600,
-                                          ),
-                                        ),
-                                        onTap: () {
-                                          context.push('/expense/${exp.id}', extra: exp);
-                                        },
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final exp = recentThree[index];
+                              return TransactionListItem(
+                                expense: exp,
+                                currencyCode: currencyCode,
+                                onDelete: () => _deleteExpense(ref, exp),
+                                showDate: false,
+                              );
+                            },
                               childCount: recentThree.length,
                             ),
                           ),

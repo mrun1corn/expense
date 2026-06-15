@@ -8,6 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:expense/core/payment/payment_systems_manager.dart';
+import 'package:expense/features/expenses/presentation/widgets/transaction_list_item.dart';
+import 'package:expense/l10n/app_localizations.dart';
+import 'package:expense/features/expenses/presentation/widgets/expense_ui_utils.dart';
 
 class AnalyticsScreen extends ConsumerStatefulWidget {
   const AnalyticsScreen({super.key});
@@ -33,25 +36,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     }
   }
 
-  Color _getCategoryColor(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.food: return Colors.orange;
-      case ExpenseCategory.transport: return Colors.blue;
-      case ExpenseCategory.shopping: return Colors.purple;
-      case ExpenseCategory.utilities: return Colors.amber;
-      case ExpenseCategory.health: return Colors.red;
-      case ExpenseCategory.entertainment: return Colors.green;
-      case ExpenseCategory.education: return Colors.indigo;
-      case ExpenseCategory.salary: return Colors.teal;
-      case ExpenseCategory.business: return Colors.cyan;
-      case ExpenseCategory.investment: return Colors.lightGreen;
-      case ExpenseCategory.gift: return Colors.deepPurple;
-      case ExpenseCategory.friend: return Colors.brown;
-      case ExpenseCategory.bank: return Colors.blueGrey;
-      case ExpenseCategory.family: return Colors.pink;
-      case ExpenseCategory.other: return Colors.grey;
-    }
-  }
+  // We use ExpenseUiUtils for category styling now
 
   Color _getPaymentSystemColor(String systemName) {
     final type = PaymentSystemsManager.getSystemTypeColor(systemName);
@@ -75,55 +60,59 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
     }
   }
 
-  IconData _getCategoryIcon(ExpenseCategory category) {
-    switch (category) {
-      case ExpenseCategory.food: return Icons.restaurant;
-      case ExpenseCategory.transport: return Icons.directions_car;
-      case ExpenseCategory.utilities: return Icons.electrical_services;
-      case ExpenseCategory.entertainment: return Icons.movie;
-      case ExpenseCategory.shopping: return Icons.shopping_bag;
-      case ExpenseCategory.health: return Icons.medical_services;
-      case ExpenseCategory.education: return Icons.school;
-      case ExpenseCategory.salary: return Icons.work;
-      case ExpenseCategory.business: return Icons.storefront;
-      case ExpenseCategory.investment: return Icons.trending_up;
-      case ExpenseCategory.gift: return Icons.card_giftcard;
-      case ExpenseCategory.friend: return Icons.people;
-      case ExpenseCategory.bank: return Icons.account_balance;
-      case ExpenseCategory.family: return Icons.house;
-      case ExpenseCategory.other: return Icons.more_horiz;
-    }
-  }
-
-  String _formatEnumName(String name) {
-    if (name.isEmpty) return '';
-    return name[0].toUpperCase() + name.substring(1);
+  void _deleteExpense(WidgetRef ref, Expense exp) {
+    ref.read(expenseRepositoryProvider).deleteExpense(exp.id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${AppLocalizations.of(context)?.deleted ?? "Deleted"} "${exp.title}"'),
+        action: SnackBarAction(
+          label: AppLocalizations.of(context)?.undo ?? 'UNDO',
+          onPressed: () {
+            ref.read(expenseRepositoryProvider).addExpense(exp);
+          },
+        ),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-        final expensesAsync = ref.watch(expensesStreamProvider);
+    // We fetch historical data (6 months) for the trendline
+    final allExpensesAsync = ref.watch(expensesStreamProvider);
+    // We fetch the currently selected month
+    final monthlyExpensesAsync = ref.watch(monthlyExpensesStreamProvider(DateTime(_selectedMonth.year, _selectedMonth.month)));
+    // We fetch the previous month
+    final prevMonthDate = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+    final prevMonthlyExpensesAsync = ref.watch(monthlyExpensesStreamProvider(prevMonthDate));
+    
     final currencyCode = ref.watch(currencyProvider);
 
     return Scaffold(
       backgroundColor: AppColors.getBgBase(context),
       body: SafeArea(
-        child: expensesAsync.when(
-          data: (expenses) {
+        child: allExpensesAsync.when(
+          data: (allExpenses) {
+            final monthlyData = monthlyExpensesAsync.valueOrNull ?? [];
+            final prevMonthlyData = prevMonthlyExpensesAsync.valueOrNull ?? [];
             // 1. Calculate Monthly Expenses
-            final monthlyExpenses = expenses.where((e) =>
-                e.date.month == _selectedMonth.month &&
-                e.date.year == _selectedMonth.year &&
-                e.type == TransactionType.expense &&
-                !e.isDeleted).toList();
+            final monthlyExpenses = monthlyData.where((e) => e.type == TransactionType.expense).toList();
+
+            final allMonthlyTransactions = monthlyData.toList()
+              ..sort((a, b) => b.date.compareTo(a.date));
+
+            // Group transactions by date
+            final groupedTransactions = <DateTime, List<Expense>>{};
+            for (final exp in allMonthlyTransactions) {
+              final dateKey = DateTime(exp.date.year, exp.date.month, exp.date.day);
+              if (!groupedTransactions.containsKey(dateKey)) {
+                groupedTransactions[dateKey] = [];
+              }
+              groupedTransactions[dateKey]!.add(exp);
+            }
+            final sortedDates = groupedTransactions.keys.toList()..sort((a, b) => b.compareTo(a));
 
             // 2. Previous Month Expenses (for delta change)
-            final prevMonthDate = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
-            final prevMonthExpenses = expenses.where((e) =>
-                e.date.month == prevMonthDate.month &&
-                e.date.year == prevMonthDate.year &&
-                e.type == TransactionType.expense &&
-                !e.isDeleted).toList();
+            final prevMonthExpenses = prevMonthlyData.where((e) => e.type == TransactionType.expense).toList();
 
             final totalSpent = monthlyExpenses.fold<double>(0.0, (sum, e) => sum + e.amount);
             final prevTotalSpent = prevMonthExpenses.fold<double>(0.0, (sum, e) => sum + e.amount);
@@ -176,7 +165,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
             });
 
             final historicalTotals = historicalMonths.map((m) {
-              return expenses.where((e) =>
+              return allExpenses.where((e) =>
                   e.date.month == m.month &&
                   e.date.year == m.year &&
                   e.type == TransactionType.expense &&
@@ -443,7 +432,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                                     final amount = entry.value;
                                     final pct = (amount / totalSpent * 100).toStringAsFixed(1);
                                     return PieChartSectionData(
-                                      color: _getCategoryColor(cat),
+                                      color: ExpenseUiUtils.getCategoryColor(cat),
                                       value: amount,
                                       title: '$pct%',
                                       radius: 45,
@@ -462,14 +451,14 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                             ...categoryTotals.entries.map((entry) {
                               final cat = entry.key;
                               final amount = entry.value;
-                              final catColor = _getCategoryColor(cat);
+                              final catColor = ExpenseUiUtils.getCategoryColor(cat);
                               return ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: catColor.withOpacity(0.1),
-                                  child: Icon(_getCategoryIcon(cat), color: catColor, size: 18),
+                                  child: Icon(ExpenseUiUtils.getCategoryIcon(cat), color: catColor, size: 18),
                                 ),
                                 title: Text(
-                                  _formatEnumName(cat.name),
+                                  ExpenseUiUtils.formatEnumName(cat.name),
                                   style: AppTextStyles.headingSm(color: AppColors.getFgPrimary(context)),
                                 ),
                                 trailing: Text(
@@ -577,6 +566,72 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                     ),
                   ),
                 ],
+
+                // Transactions list title
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
+                    child: Text(
+                      AppLocalizations.of(context)?.transactions.toUpperCase() ?? 'TRANSACTIONS',
+                      style: AppTextStyles.overline(color: AppColors.getFgTertiary(context)),
+                    ),
+                  ),
+                ),
+
+                if (allMonthlyTransactions.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Center(
+                        child: Text(AppLocalizations.of(context)?.noTransactionsThisMonth ?? 'No transactions recorded for this month.')
+                      ),
+                    ),
+                  )
+                else
+                  ...sortedDates.map((date) {
+                    final dayExpenses = groupedTransactions[date]!;
+                    final now = DateTime.now();
+                    final isToday = date.year == now.year && date.month == now.month && date.day == now.day;
+                    final isYesterday = date.year == now.year && date.month == now.month && date.day == now.day - 1;
+                    
+                    String dateHeader;
+                    if (isToday) {
+                      dateHeader = 'Today';
+                    } else if (isYesterday) {
+                      dateHeader = 'Yesterday';
+                    } else {
+                      dateHeader = DateFormat('MMM d, yyyy').format(date);
+                    }
+
+                    return SliverMainAxisGroup(
+                      slivers: [
+                        SliverToBoxAdapter(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(36, 16, 20, 4),
+                            child: Text(
+                              dateHeader.toUpperCase(),
+                              style: AppTextStyles.captionBold(color: AppColors.getFgSecondary(context)),
+                            ),
+                          ),
+                        ),
+                        SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (context, index) {
+                              final exp = dayExpenses[index];
+                              return TransactionListItem(
+                                expense: exp,
+                                currencyCode: currencyCode,
+                                onDelete: () => _deleteExpense(ref, exp),
+                                showDate: false,
+                              );
+                            },
+                            childCount: dayExpenses.length,
+                          ),
+                        ),
+                      ],
+                    );
+                  }),
+
                 const SliverPadding(padding: EdgeInsets.only(bottom: 96)),
               ],
             );

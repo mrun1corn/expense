@@ -58,4 +58,17 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get transactionDeleted => 'লেনদেন সফলভাবে মুছে ফেলা হয়েছে!';
+
+  @override
+  String get transactions => 'Transactions';
+
+  @override
+  String get noTransactionsThisMonth =>
+      'No transactions recorded for this month.';
+
+  @override
+  String get deleted => 'Deleted';
+
+  @override
+  String get undo => 'UNDO';
 }

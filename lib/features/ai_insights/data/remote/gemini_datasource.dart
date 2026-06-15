@@ -12,9 +12,14 @@ class GeminiDatasource {
 
   String _cleanJson(String text) {
     var s = text.trim();
-    if (s.startsWith('```json')) s = s.substring(7);
-    else if (s.startsWith('```')) s = s.substring(3);
-    if (s.endsWith('```')) s = s.substring(0, s.length - 3);
+    if (s.startsWith('```json')) {
+      s = s.substring(7);
+    } else if (s.startsWith('```')) {
+      s = s.substring(3);
+    }
+    if (s.endsWith('```')) {
+      s = s.substring(0, s.length - 3);
+    }
     return s.trim();
   }
 

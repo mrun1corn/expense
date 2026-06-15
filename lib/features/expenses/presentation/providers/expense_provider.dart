@@ -29,6 +29,11 @@ final expensesStreamProvider = StreamProvider<List<Expense>>((ref) {
   final repository = ref.watch(expenseRepositoryProvider);
   return repository.watchExpenses();
 });
+// Real-time stream of expenses for a specific month
+final StreamProviderFamily<List<Expense>, DateTime> monthlyExpensesStreamProvider = StreamProvider.family<List<Expense>, DateTime>((ref, month) {
+  final repository = ref.watch(expenseRepositoryProvider);
+  return repository.watchExpensesByMonth(month.year, month.month);
+});
 
 // Provides expenses for a specific month and year
 final FutureProviderFamily<List<Expense>, ({int month, int year})> monthlyExpensesProvider =

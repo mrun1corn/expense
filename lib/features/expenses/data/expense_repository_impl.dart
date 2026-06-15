@@ -11,6 +11,10 @@ class ExpenseRepositoryImpl implements ExpenseRepository {
   Stream<List<Expense>> watchExpenses() {
     return _localDatasource.watchAll();
   }
+  @override
+  Stream<List<Expense>> watchExpensesByMonth(int year, int month) {
+    return _localDatasource.watchByMonth(year, month);
+  }
 
   @override
   Future<void> addExpense(Expense expense) async {

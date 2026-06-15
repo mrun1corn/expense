@@ -16,6 +16,18 @@ class ExpenseLocalDatasource {
         .watch(fireImmediately: true)
         .map((list) => list.map<Expense>((e) => e.toDomain()).toList());
   }
+  // Watches expenses for a specific month
+  Stream<List<Expense>> watchByMonth(int year, int month) {
+    final start = DateTime(year, month, 1);
+    final end = DateTime(year, month + 1, 0, 23, 59, 59, 999);
+    return _isar.expenseIsars
+        .filter()
+        .isDeletedEqualTo(false)
+        .dateBetween(start, end)
+        .sortByDateDesc()
+        .watch(fireImmediately: true)
+        .map((list) => list.map<Expense>((e) => e.toDomain()).toList());
+  }
 
   // Adds a new expense to Isar database
   Future<void> add(Expense e) async {
