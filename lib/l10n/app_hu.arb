@@ -12,5 +12,15 @@
   "smartNotifications": "Smart Notifications",
   "profileSync": "Profile & Sync",
   "saveLimit": "Save Limit",
-  "addTransaction": "Add Transaction"
+  "addTransaction": "Add Transaction",
+  "transactionAdded": "Transaction added successfully!",
+  "transactionUpdated": "Transaction updated successfully!",
+  "transactionDeleted": "Transaction deleted successfully!",
+  "transactions": "Transactions",
+  "noTransactionsThisMonth": "No transactions recorded for this month.",
+  "deleted": "Deleted",
+  "undo": "UNDO",
+  "totalBalance": "Total Balance",
+  "income": "Income",
+  "expense": "Expense"
 }
