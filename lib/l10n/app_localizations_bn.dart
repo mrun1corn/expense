@@ -71,4 +71,13 @@ class AppLocalizationsBn extends AppLocalizations {
 
   @override
   String get undo => 'UNDO';
+
+  @override
+  String get totalBalance => 'Total Balance';
+
+  @override
+  String get income => 'Income';
+
+  @override
+  String get expense => 'Expense';
 }

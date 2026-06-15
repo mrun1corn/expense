@@ -183,7 +183,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
                   child: ScreenHeader(
                     title: 'Analytics & Trends',
                     subtitle: 'Track spending patterns over time',
-                    showBackButton: true,
+                    showBackButton: Navigator.canPop(context),
                     action: IconButton(
                       icon: const Icon(Icons.calendar_month_outlined),
                       onPressed: _showMonthPicker,

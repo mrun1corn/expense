@@ -5,6 +5,7 @@ import 'package:expense/features/expenses/presentation/screens/add_expense_scree
 import 'package:expense/features/expenses/presentation/screens/home_screen.dart';
 import 'package:expense/features/settings/presentation/providers/api_key_provider.dart';
 import 'package:expense/features/settings/presentation/screens/settings_screen.dart';
+import 'package:expense/features/analytics/presentation/screens/analytics_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -32,6 +33,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
 
   final List<Widget> _screens = [
     const HomeScreen(),
+    const AnalyticsScreen(),
     const AddExpenseScreen(),
     const AiInsightsScreen(),
     const SettingsScreen(),
@@ -131,13 +133,20 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
             ),
             _buildNavItem(
               index: 1,
-              outlineIcon: Icons.add_outlined,
-              filledIcon: Icons.add,
-              label: 'Add',
+              outlineIcon: Icons.bar_chart_outlined,
+              filledIcon: Icons.bar_chart,
+              label: 'Stats',
               currentIndex: currentIndex,
             ),
             _buildNavItem(
               index: 2,
+              outlineIcon: Icons.add_circle_outline_rounded,
+              filledIcon: Icons.add_circle_rounded,
+              label: 'Add',
+              currentIndex: currentIndex,
+            ),
+            _buildNavItem(
+              index: 3,
               outlineIcon: Icons.auto_awesome_outlined,
               filledIcon: Icons.auto_awesome,
               label: 'Insights',
@@ -151,7 +160,7 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
                   : null,
             ),
             _buildNavItem(
-              index: 3,
+              index: 4,
               outlineIcon: Icons.settings_outlined,
               filledIcon: Icons.settings,
               label: 'Settings',

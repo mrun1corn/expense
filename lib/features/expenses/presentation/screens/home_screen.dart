@@ -200,7 +200,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                     ),
 
-                    // Total Spent Hero Card
+                    // Total Balance Hero Card
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
@@ -209,67 +209,99 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                           child: Container(
                             decoration: BoxDecoration(
                               color: AppColors.getHeroBg(context),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(24),
                               border: isDark ? Border.all(color: const Color(0x1FFFFFFF)) : null,
                               boxShadow: AppShadows.getShadow1(context),
                             ),
-                            padding: const EdgeInsets.all(20),
+                            padding: const EdgeInsets.all(24),
                             child: Stack(
                               children: [
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      AppLocalizations.of(context)!.totalSpent.toUpperCase(),
+                                      (AppLocalizations.of(context)?.totalBalance ?? 'Total Balance').toUpperCase(),
                                       style: AppTextStyles.overline(color: AppColors.getHeroFgMuted(context)),
                                     ),
                                     const SizedBox(height: 8),
                                     Text(
-                                      totalExpenses.toCurrencyString(currencyCode),
+                                      netSaved.toCurrencyString(currencyCode),
                                       style: AppTextStyles.monospace(
                                         32,
                                         color: AppColors.getHeroFg(context),
                                         weight: FontWeight.w700,
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      'of ${totalBudgetLimit.toCurrencySymbol(currencyCode)}${totalBudgetLimit.toStringAsFixed(0)} budget',
-                                      style: AppTextStyles.bodySm(color: AppColors.getHeroFgMuted(context)),
-                                    ),
-                                    const SizedBox(height: 20),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(3),
-                                      child: SizedBox(
-                                        height: 6,
-                                        child: LinearProgressIndicator(
-                                          value: percent,
-                                          backgroundColor: const Color(0x22FFFFFF),
-                                          valueColor: AlwaysStoppedAnimation<Color>(
-                                            percent > 0.9
-                                                ? AppColors.dangerLight
-                                                : (percent > 0.75
-                                                    ? AppColors.warningLight
-                                                    : AppColors.getHeroFg(context)),
+                                    const SizedBox(height: 24),
+                                    const Divider(color: Colors.white24, height: 1),
+                                    const SizedBox(height: 16),
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 14,
+                                                backgroundColor: const Color(0x2234C759),
+                                                child: Icon(
+                                                  Icons.arrow_downward_rounded,
+                                                  size: 14,
+                                                  color: AppColors.getSuccess(context),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    (AppLocalizations.of(context)?.income ?? 'Income').toUpperCase(),
+                                                    style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    totalIncome.toCurrencyString(currencyCode),
+                                                    style: AppTextStyles.bodyMd(color: Colors.white).copyWith(fontWeight: FontWeight.bold),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
                                           ),
                                         ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Text(
-                                          '${0.0.toCurrencySymbol(currencyCode)}0',
-                                          style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
+                                        Container(
+                                          width: 1,
+                                          height: 32,
+                                          color: Colors.white24,
                                         ),
-                                        Text(
-                                          '${remaining.toCurrencySymbol(currencyCode)}${remaining.toStringAsFixed(0)} left',
-                                          style: AppTextStyles.captionBold(color: AppColors.getHeroFg(context)),
-                                        ),
-                                        Text(
-                                          '${totalBudgetLimit.toCurrencySymbol(currencyCode)}${totalBudgetLimit.toStringAsFixed(0)}',
-                                          style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              CircleAvatar(
+                                                radius: 14,
+                                                backgroundColor: const Color(0x22FF3B30),
+                                                child: Icon(
+                                                  Icons.arrow_upward_rounded,
+                                                  size: 14,
+                                                  color: AppColors.getDanger(context),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    (AppLocalizations.of(context)?.expense ?? 'Expense').toUpperCase(),
+                                                    style: AppTextStyles.caption(color: AppColors.getHeroFgMuted(context)),
+                                                  ),
+                                                  const SizedBox(height: 2),
+                                                  Text(
+                                                    totalExpenses.toCurrencyString(currencyCode),
+                                                    style: AppTextStyles.bodyMd(color: Colors.white).copyWith(fontWeight: FontWeight.bold),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ],
                                     ),

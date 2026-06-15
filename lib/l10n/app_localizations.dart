@@ -277,6 +277,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'UNDO'**
   String get undo;
+
+  /// No description provided for @totalBalance.
+  ///
+  /// In en, this message translates to:
+  /// **'Total Balance'**
+  String get totalBalance;
+
+  /// No description provided for @income.
+  ///
+  /// In en, this message translates to:
+  /// **'Income'**
+  String get income;
+
+  /// No description provided for @expense.
+  ///
+  /// In en, this message translates to:
+  /// **'Expense'**
+  String get expense;
 }
 
 class _AppLocalizationsDelegate
